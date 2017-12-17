@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#F05050</color>
+    <color name="colorPrimaryDark">#FFFFFF</color>
+    <color name="colorAccent">#FF2D55</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="text_black">#696969</color>
+    <color name="gray_bg1">#F9F9F9</color>
+    <color name="gray_bg1_alpha">#99F1F1F1</color>
+    <color name="gray_bg2">#EDEDED</color>
+    <color name="gray_bg3">#F1F1F1</color>
+    <color name="gray_bg4">#C8C8C8</color>
+    <color name="select_red">#FF2D55</color>
+    <color name="gray_split">#CFCFCF</color>
+    <color name="split_line">#E6E6E6</color>
+    <color name="bottom_text_color">#515151</color>
+    <color name="voice_add_less">#969696</color>
+    <color name="curve_bg">#EE6363</color>
+    <color name="red_bottom_select">#F05050</color>
+    <color name="white_10alpha">#1AFFFFFF</color>
+    <color name="white_30alpha">#4DFFFFFF</color>
+    <color name="gray_dcdcdc">#DCDCDC</color>
+</resources>
