@@ -10,13 +10,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,27 +33,24 @@ import baiduvoice.ChainRecogListener;
 import baiduvoice.CommonRecogParams;
 import baiduvoice.DigitalDialogInput;
 import baiduvoice.IStatus;
-import baiduvoice.Logger;
 import baiduvoice.MessageStatusRecogListener;
 import baiduvoice.MyRecognizer;
 import baiduvoice.OnlineRecogParams;
 import baiduvoice.SimpleTransApplication;
-import baiduvoice.StatusRecogListener;
 import entity.ViewData;
 import utils.BlueDeviceUtils;
 import utils.URL_UNIVERSAL;
 
-import static android.app.Activity.RESULT_OK;
 
 public class ControlFragment extends Fragment implements View.OnClickListener, IStatus {
     private Shanxing shanxing;
     private ArrayList<ViewData> viewDatas = new ArrayList<>();
     private int currentVoice;
+    private FloatingActionButton faBtn;
     private TextView tv_test;
     private TextView tv_status1, tv_status2, tv_status3, tv_status4, tv_direction, tv_direction_anti, tv_musicVoice;
     private ImageView iv_play, iv_left, iv_right, iv_switch, iv_link, iv_voice, iv_light, iv_voicd_add, iv_voicd_less;
     private boolean isOpen, isPlaying, isLightOpen;
-    private Message msg;
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -61,11 +58,11 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
             handleMsg(msg);
             switch (msg.what) {
                 case 30:
-                    Toast.makeText(getActivity().getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity().getApplicationContext(), "设备连接成功", Toast.LENGTH_SHORT).show();
                     BlueDeviceUtils.isLink = true;
                     break;
                 case 40:
-                    Toast.makeText(getActivity().getApplicationContext(), msg.obj.toString(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity().getApplicationContext(), "设备连接失败", Toast.LENGTH_SHORT).show();
                     BlueDeviceUtils.bluetoothDevice = null;
                     BlueDeviceUtils.isLink = false;
                     break;
@@ -180,6 +177,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
             }
         });
 
+        faBtn = (FloatingActionButton) view.findViewById(R.id.faBtn);
         tv_status1 = (TextView) view.findViewById(R.id.tv_status1);
         tv_status2 = (TextView) view.findViewById(R.id.tv_status2);
         tv_status3 = (TextView) view.findViewById(R.id.tv_status3);
@@ -199,6 +197,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         iv_voicd_add = (ImageView) view.findViewById(R.id.iv_voicd_add);
         iv_voicd_less = (ImageView) view.findViewById(R.id.iv_voicd_less);
 
+        faBtn.setOnClickListener(this);
         tv_direction.setOnClickListener(this);
         tv_direction_anti.setOnClickListener(this);
         tv_status1.setOnClickListener(this);
@@ -213,8 +212,6 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         iv_voicd_add.setOnClickListener(this);
         iv_voicd_less.setOnClickListener(this);
         iv_voice.setOnClickListener(this);
-
-        msg = new Message();
 
         currentVoice = 2;
         tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
@@ -315,6 +312,9 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                 } else if (newState == BluetoothGatt.STATE_DISCONNECTED) { //状态变为 未连接
                     BlueDeviceUtils.isLink = false;
                     BlueDeviceUtils.bluetoothGatt.close();
+                    BlueDeviceUtils.bluetoothGatt = null;
+                    BlueDeviceUtils.bluetoothGattService = null;
+                    BlueDeviceUtils.bluetoothGattCharacteristic = null;
                     BlueDeviceUtils.bluetoothDevice = null;
                     Log.i("info", "连接断开");
                 }
@@ -331,13 +331,9 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                 BlueDeviceUtils.bluetoothGattCharacteristic = BlueDeviceUtils.bluetoothGattService.getCharacteristic(UUID.fromString(characteristic_UUID));//找到服务后在通过UUID找到特征
                 if (BlueDeviceUtils.bluetoothGattCharacteristic != null) {
                     gatt.setCharacteristicNotification(BlueDeviceUtils.bluetoothGattCharacteristic, true);//启用onCharacteristicChanged(），用于接收数据
-                    msg.what = 30;
-                    msg.obj = "设备连接成功";
-                    handler.sendMessage(msg);
+                    handler.sendEmptyMessage(30);
                 } else {
-                    msg.what = 40;
-                    msg.obj = "设备连接失败";
-                    handler.sendMessage(msg);
+                    handler.sendEmptyMessage(40);
                     return;
                 }
             }
@@ -377,6 +373,27 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
+            case R.id.faBtn:
+                switch (status) {
+                    case STATUS_NONE: // 初始状态
+                        start();
+                        status = STATUS_WAITING_READY;
+                        //tv_test.setText("");
+                        break;
+                    case STATUS_WAITING_READY: // 调用本类的start方法后，即输入START事件后，等待引擎准备完毕。
+                    case STATUS_READY: // 引擎准备完毕。
+                    case STATUS_SPEAKING:
+                    case STATUS_FINISHED:// 长语音情况
+                    case STATUS_RECOGNITION:
+                        stop();
+                        status = STATUS_STOPPED; // 引擎识别中
+                        break;
+                    case STATUS_STOPPED: // 引擎识别中
+                        cancel();
+                        status = STATUS_NONE; // 识别结束，回到初始状态
+                        break;
+                }
+                break;
             case R.id.tv_direction:
                 tv_direction.setTextColor(getResources().getColor(R.color.white));
                 tv_direction.setBackgroundResource(R.drawable.directtion_select_bg);
@@ -431,25 +448,6 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                 sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_NEXT);
                 break;
             case R.id.iv_voice:
-                switch (status) {
-                    case STATUS_NONE: // 初始状态
-                        start();
-                        status = STATUS_WAITING_READY;
-                        //tv_test.setText("");
-                        break;
-                    case STATUS_WAITING_READY: // 调用本类的start方法后，即输入START事件后，等待引擎准备完毕。
-                    case STATUS_READY: // 引擎准备完毕。
-                    case STATUS_SPEAKING:
-                    case STATUS_FINISHED:// 长语音情况
-                    case STATUS_RECOGNITION:
-                        stop();
-                        status = STATUS_STOPPED; // 引擎识别中
-                        break;
-                    case STATUS_STOPPED: // 引擎识别中
-                        cancel();
-                        status = STATUS_NONE; // 识别结束，回到初始状态
-                        break;
-                }
                 break;
             case R.id.iv_link:
                 startActivityForResult(new Intent(getActivity(), BLEActivity.class), 1);
@@ -592,6 +590,79 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                 isOpen = false;
                 sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_CLOSE);
             }
+        } else if(msg.contains("一级速度")) {
+            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_ONE);
+            shanxing.updateUI(1);
+        } else if(msg.contains("二级速度")) {
+            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_TWO);
+            shanxing.updateUI(2);
+        } else if(msg.contains("三级速度") || msg.contains("3g速度")) {
+            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_THREE);
+            shanxing.updateUI(3);
+        } else if(msg.contains("四级速度") || msg.contains("4g速度")) {
+            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_FOUR);
+            shanxing.updateUI(4);
+        } else if(msg.contains("五级速度") || msg.contains("无极速度")) {
+            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_FIVE);
+            shanxing.updateUI(5);
+        } else if(msg.contains("六级速度")) {
+            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_SIX);
+            shanxing.updateUI(6);
+        } else if(msg.contains("一级声音")) {
+            currentVoice = 1;
+            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_ONE);
+            voiceUpdateIcon(1);
+            iv_voicd_less.setEnabled(false);
+            iv_voicd_less.setImageResource(R.drawable.voice_less_unuse);
+            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+        } else if(msg.contains("二级声音")) {
+            currentVoice = 2;
+            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_TWO);
+            voiceUpdateIcon(2);
+            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+        } else if(msg.contains("三级声音") || msg.contains("3g声音")) {
+            currentVoice = 3;
+            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_THREE);
+            voiceUpdateIcon(3);
+            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+        } else if(msg.contains("四季声音") || msg.contains("四级声音") || msg.contains("4g声音")) {
+            currentVoice = 4;
+            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_FOUR);
+            voiceUpdateIcon(4);
+            iv_voicd_add.setEnabled(false);
+            iv_voicd_add.setImageResource(R.drawable.voice_add_unuse);
+            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+        }
+    }
+
+    private void voiceUpdateIcon(int rank) {
+        switch (rank) {
+            case 1:
+                iv_voicd_less.setImageResource(R.drawable.voice_less_unuse);
+                iv_voicd_less.setEnabled(false);
+                iv_voicd_add.setEnabled(true);
+                iv_voicd_add.setImageResource(R.drawable.voice_add);
+                break;
+            case 2:
+                iv_voicd_less.setImageResource(R.drawable.voice_less);
+                iv_voicd_less.setEnabled(true);
+                iv_voicd_add.setEnabled(true);
+                iv_voicd_add.setImageResource(R.drawable.voice_add);
+                break;
+            case 3:
+                iv_voicd_less.setImageResource(R.drawable.voice_less);
+                iv_voicd_less.setEnabled(true);
+                iv_voicd_add.setEnabled(true);
+                iv_voicd_add.setImageResource(R.drawable.voice_add);
+                break;
+            case 4:
+                iv_voicd_less.setImageResource(R.drawable.voice_less);
+                iv_voicd_less.setEnabled(true);
+                iv_voicd_add.setEnabled(false);
+                iv_voicd_add.setImageResource(R.drawable.voice_add_unuse);
+                break;
+            default:
+                break;
         }
     }
 }

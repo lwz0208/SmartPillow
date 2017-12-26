@@ -22,4 +22,5 @@
     <color name="white_10alpha">#1AFFFFFF</color>
     <color name="white_30alpha">#4DFFFFFF</color>
     <color name="gray_dcdcdc">#DCDCDC</color>
+    <color name="blue_floatBtn">#00CDCD</color>
 </resources>

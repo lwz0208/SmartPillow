@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="fragment.ControlFragment">
 
     <LinearLayout
@@ -26,6 +27,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
+                android:visibility="invisible"
                 android:layout_marginLeft="15dp"
                 android:src="@drawable/spech_voice" />
 
@@ -59,16 +61,30 @@
 
     </LinearLayout>
 
+    <android.support.design.widget.FloatingActionButton
+             android:id="@+id/faBtn"
+             app:fabSize="mini"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:layout_marginRight="15dp"
+             android:layout_marginBottom="15dp"
+             android:layout_alignParentRight="true"
+             android:layout_alignParentBottom="true"
+             app:backgroundTint="@color/blue_floatBtn"
+             android:src="@drawable/spech_voice"/>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/ll_top"
         android:fillViewport="true"
-        android:scrollbars="none">
+        android:scrollbars="none"
+        android:layout_below="@+id/ll_top"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical">
 
             <LinearLayout
