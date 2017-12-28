@@ -1,5 +1,6 @@
 package adapter;
 
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -12,7 +13,7 @@ import com.lwz.smartpillow.R;
 
 import java.util.List;
 
-import entity.BLEDevice;
+import utils.BlueDeviceUtils;
 
 /**
  * Created by Li Wenzhao on 2017/11/12.
@@ -21,9 +22,9 @@ import entity.BLEDevice;
 public class BLEDeviceAdapter extends BaseAdapter {
     private Context context;
     private LayoutInflater layoutInflater;
-    private List<BLEDevice> bleDevices;
+    private List<BluetoothDevice> bleDevices;
 
-    public BLEDeviceAdapter(Context context, List<BLEDevice> bleDevices) {
+    public BLEDeviceAdapter(Context context, List<BluetoothDevice> bleDevices) {
         this.bleDevices = bleDevices;
         this.context = context;
         layoutInflater = LayoutInflater.from(context);
@@ -51,8 +52,7 @@ public class BLEDeviceAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder myViewHolder = null;
-        if (convertView == null)
-        {
+        if (convertView == null) {
             myViewHolder = new ViewHolder();
             // 获取list_item布局文件的视图
             convertView = layoutInflater.inflate(R.layout.ble_device_item, null);
@@ -65,11 +65,22 @@ public class BLEDeviceAdapter extends BaseAdapter {
             myViewHolder = (ViewHolder) convertView.getTag();
         }
 
-        myViewHolder.tv_device.setText(bleDevices.get(position).getDeviceName());
-        if(bleDevices.get(position).getLinkStatus() == 1)
-            myViewHolder.tv_device.setTextColor(context.getResources().getColor(R.color.select_red));
-        else
+        if(position == 0) {
+            if(BlueDeviceUtils.bluetoothDevice != null && BlueDeviceUtils.isLink) {
+                myViewHolder.tv_device.setTextColor(context.getResources().getColor(R.color.select_red));
+                myViewHolder.tv_device.setText(bleDevices.get(position).getName() + " (已连接)");
+            } else if(BlueDeviceUtils.isConnecting) {
+                myViewHolder.tv_device.setTextColor(Color.GRAY);
+                myViewHolder.tv_device.setText(bleDevices.get(position).getName() + " (正在连接...)");
+            } else {
+                myViewHolder.tv_device.setTextColor(Color.GRAY);
+                myViewHolder.tv_device.setText(bleDevices.get(position).getName());
+            }
+        } else {
             myViewHolder.tv_device.setTextColor(Color.GRAY);
+            myViewHolder.tv_device.setText(bleDevices.get(position).getName());
+        }
+
         return convertView;
     }
 }

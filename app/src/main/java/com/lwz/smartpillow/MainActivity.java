@@ -111,7 +111,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
         BlueDeviceUtils.mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         BlueDeviceUtils.mBluetoothAdapter = BlueDeviceUtils.mBluetoothManager.getAdapter();
         if (BlueDeviceUtils.mBluetoothAdapter != null) {

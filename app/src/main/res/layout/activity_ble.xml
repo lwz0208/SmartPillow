@@ -21,6 +21,15 @@
             android:layout_width="match_parent"
             android:layout_height="44dp">
 
+            <ImageView
+                android:id="@+id/iv_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:src="@drawable/back_white" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -36,7 +45,8 @@
                 android:indeterminateTint="@color/white"
                 android:layout_centerVertical="true"
                 android:layout_alignParentRight="true"
-                android:layout_marginRight="15dp" />
+                android:layout_marginRight="15dp"
+                android:visibility="invisible"/>
 
         </RelativeLayout>
 
@@ -50,6 +60,7 @@
         android:layout_marginTop="5dp"
         android:textSize="14sp"
         android:textColor="@color/text_black"
+        android:visibility="gone"
         android:text="设备搜索中..."/>
 
     <RelativeLayout

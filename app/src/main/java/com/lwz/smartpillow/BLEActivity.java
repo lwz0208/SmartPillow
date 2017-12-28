@@ -5,7 +5,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Handler;
@@ -18,6 +22,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -25,20 +30,19 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 import adapter.BLEDeviceAdapter;
-import entity.BLEDevice;
 import utils.BlueDeviceUtils;
 
 public class BLEActivity extends AppCompatActivity {
+    private boolean isScanning = false;
     private ProgressBar progressBar;
     private ListView listView;
     private BLEDeviceAdapter adapter;
-    private List<BLEDevice> bleDevices = new ArrayList<>();
-    //定义对象
     private BluetoothLeScanner bluetoothLeScanner;
     private List<BluetoothDevice> devices = new ArrayList<>();//存放扫描结果
-    private Message msg;
     private long SCAN_SECOND = 10000;
     private TextView tv_disconnect, tv_searching;
+    private ImageView iv_back;
+    private BluetoothStateBroadcastReceiver mReceiver;
 
     //startScan()回调函数,5.0以上使用
     private ScanCallback mScanCallback = new ScanCallback() {
@@ -49,8 +53,6 @@ public class BLEActivity extends AppCompatActivity {
             if(device != null) {
                 if (!devices.contains(device) && device.getName()!= null) {  //判断是否已经添加
                     devices.add(device);//也可以添加devices.getName()到列表，这里省略            }
-                    BLEDevice bleDevice = new BLEDevice(device.getName(), 0);
-                    bleDevices.add(bleDevice);
                     adapter.notifyDataSetChanged();
                     // callbackType：回调类型
                     // result：扫描的结果，不包括传统蓝牙        }
@@ -68,8 +70,6 @@ public class BLEActivity extends AppCompatActivity {
                 //过滤掉其他设备
                 if (!devices.contains(bluetoothDevice) && bluetoothDevice.getName()!= null){
                     devices.add(bluetoothDevice);
-                    BLEDevice bleDevice = new BLEDevice(bluetoothDevice.getName(), 0);
-                    bleDevices.add(bleDevice);
                     adapter.notifyDataSetChanged();
                 }
             }
@@ -82,9 +82,20 @@ public class BLEActivity extends AppCompatActivity {
             switch (msg.what) {
                 case 0:
                     Toast.makeText(getApplicationContext(), "请打开您的蓝牙",Toast.LENGTH_SHORT).show();
+                    progressBar.setVisibility(View.INVISIBLE);
+                    tv_searching.setVisibility(View.GONE);
                     break;
                 case 1:
-                    scanBleDevice(true);
+                    scanBleDevice();
+                    break;
+                case 2:
+                    disConnectLink();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            stopScan();
+                        }
+                    });
                     break;
                 default:
                     break;
@@ -104,8 +115,16 @@ public class BLEActivity extends AppCompatActivity {
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(Color.TRANSPARENT);
         }
+
+        iv_back = (ImageView) findViewById(R.id.iv_back);
+        iv_back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setResult(3);
+                finish();
+            }
+        });
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        msg = new Message();
         tv_disconnect = (TextView) findViewById(R.id.tv_disconnect);
         tv_searching = (TextView) findViewById(R.id.tv_searching);
         tv_disconnect.setOnClickListener(new View.OnClickListener() {
@@ -116,14 +135,8 @@ public class BLEActivity extends AppCompatActivity {
                 builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        BlueDeviceUtils.isLink = false;
-                        BlueDeviceUtils.bluetoothDevice = null;
-                        BlueDeviceUtils.bluetoothGatt.disconnect();
-                        devices.clear();
-                        bleDevices.clear();
-                        adapter.notifyDataSetChanged();
-                        scanBleDevice(true);
-                        tv_disconnect.setVisibility(View.INVISIBLE);
+                        disConnectLink();
+                        scanBleDevice();
                     }
                 }).setNegativeButton("取消", null);
                 builder.show();
@@ -134,66 +147,154 @@ public class BLEActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if(BlueDeviceUtils.isLink && bleDevices.get(position).getDeviceName().equals(BlueDeviceUtils.bluetoothDevice.getName() + "  (已连接)"))
+                if(BlueDeviceUtils.isLink && position == 0)
                     Log.i("info", "点击了自己");
                 else {
                     BlueDeviceUtils.isLink = false;
                     BlueDeviceUtils.bluetoothDevice = devices.get(position);
-                    setResult(3);
-                }
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        bluetoothLeScanner.stopScan(mScanCallback);
+                    //将点击的蓝牙挪到第一行
+                    if(position != 0) {
+                        BluetoothDevice device = devices.get(position);
+                        devices.set(position, devices.get(0));
+                        devices.set(0, device);
                     }
-                });
-                finish();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            stopScan();
+                        }
+                    });
+                    BlueDeviceUtils.isConnecting = true;
+                    adapter.notifyDataSetChanged();
+                    BlueDeviceUtils.linkBlueDevice(BLEActivity.this);
+                }
             }
         });
-        if(BlueDeviceUtils.bluetoothDevice != null && BlueDeviceUtils.isLink) {
-            bleDevices.add(new BLEDevice(BlueDeviceUtils.bluetoothDevice.getName() + "  (已连接)", 1));
-            devices.add(BlueDeviceUtils.bluetoothDevice);
-            tv_disconnect.setVisibility(View.VISIBLE);
-        }
-        adapter = new BLEDeviceAdapter(getApplicationContext(), bleDevices);
-        listView.setAdapter(adapter);
 
-        if(BlueDeviceUtils.mBluetoothAdapter != null && BlueDeviceUtils.mBluetoothAdapter.isEnabled()) {
-            msg.what = 1;
-            handler.sendMessage(msg);
+        if(BlueDeviceUtils.mBluetoothAdapter == null || !BlueDeviceUtils.mBluetoothAdapter.isEnabled()) {
+            handler.sendEmptyMessage(0);
         } else {
-            msg.what = 0;
-            handler.sendMessage(msg);
+            if(BlueDeviceUtils.bluetoothDevice != null && BlueDeviceUtils.isLink) {
+                devices.add(BlueDeviceUtils.bluetoothDevice);
+                tv_disconnect.setVisibility(View.VISIBLE);
+            } else {
+                scanBleDevice();
+            }
         }
+
+        adapter = new BLEDeviceAdapter(getApplicationContext(), devices);
+        listView.setAdapter(adapter);
     }
 
-    private void scanBleDevice(boolean enable){
+    private void scanBleDevice(){
         //android 5.0 以上
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            isScanning = true;
+            progressBar.setVisibility(View.VISIBLE);
+            tv_searching.setVisibility(View.VISIBLE);
             bluetoothLeScanner = BlueDeviceUtils.mBluetoothAdapter.getBluetoothLeScanner();
             bluetoothLeScanner.startScan(mScanCallback);
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    bluetoothLeScanner.stopScan(mScanCallback);
-                    progressBar.setVisibility(View.INVISIBLE);
-                    tv_searching.setVisibility(View.GONE);
+                    stopScan();
                 }
-            },SCAN_SECOND);
+            }, SCAN_SECOND);
+        }
+//        } else {
+//            //android 5.0以下
+//            isScanning = true;
+//            progressBar.setVisibility(View.VISIBLE);
+//            tv_searching.setVisibility(View.VISIBLE);
+//            BlueDeviceUtils.mBluetoothAdapter.startLeScan(mLeScanCallback);
+//            handler.postDelayed(new Runnable() {
+//                @Override
+//                   public void run() {
+//                    BlueDeviceUtils.mBluetoothAdapter.stopLeScan(mLeScanCallback);
+//                    isScanning = false;
+//                    progressBar.setVisibility(View.INVISIBLE);
+//                    tv_searching.setVisibility(View.GONE);
+//                }
+//            },SCAN_SECOND);
+//        }
+    }
 
-        } else {
-            //android 5.0以下
-            if (enable){
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        BlueDeviceUtils.mBluetoothAdapter.stopLeScan(mLeScanCallback);
+    private void stopScan() {
+        if(isScanning) {
+            bluetoothLeScanner.stopScan(mScanCallback);
+            isScanning = false;
+            progressBar.setVisibility(View.INVISIBLE);
+            tv_searching.setVisibility(View.GONE);
+        }
+    }
+
+    private void disConnectLink() {
+        BlueDeviceUtils.isLink = false;
+        BlueDeviceUtils.bluetoothDevice = null;
+        if(BlueDeviceUtils.bluetoothGatt != null)
+            BlueDeviceUtils.bluetoothGatt.disconnect();
+        devices.clear();
+        adapter.notifyDataSetChanged();
+        tv_disconnect.setVisibility(View.INVISIBLE);
+    }
+
+    private class BluetoothStateBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            switch (action){
+                case BluetoothAdapter.ACTION_STATE_CHANGED:
+                    int blueState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 0);
+                    switch (blueState){
+                        case BluetoothAdapter.STATE_OFF:
+                            Toast.makeText(context , "蓝牙已被关闭", Toast.LENGTH_SHORT).show();
+                            BlueDeviceUtils.bluetoothGatt = null;
+                            handler.sendEmptyMessage(2);
+                            break;
+                        case BluetoothAdapter.STATE_ON:
+                            handler.sendEmptyMessage(1);
+                            //Toast.makeText(context , "蓝牙开启"  , Toast.LENGTH_SHORT).show();
+                            break;
                     }
-                },SCAN_SECOND);
-                BlueDeviceUtils.mBluetoothAdapter.startLeScan(mLeScanCallback);
-            } else {
-                BlueDeviceUtils.mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                    break;
+                case "SUCCESS":
+                    //Toast.makeText(BLEActivity.this, "设备连接成功", Toast.LENGTH_SHORT).show();
+                    BlueDeviceUtils.isConnecting = false;
+                    BlueDeviceUtils.isLink = true;
+                    tv_disconnect.setVisibility(View.VISIBLE);
+                    adapter.notifyDataSetChanged();
+                    break;
+                case "FAILURE":
+                    Toast.makeText(BLEActivity.this, "设备连接失败", Toast.LENGTH_SHORT).show();
+                    BlueDeviceUtils.bluetoothDevice = null;
+                    BlueDeviceUtils.isLink = false;
+                    BlueDeviceUtils.isConnecting = false;
+                    tv_disconnect.setVisibility(View.INVISIBLE);
+                    adapter.notifyDataSetChanged();
+                    break;
+                default:
+                    break;
             }
         }
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        mReceiver = new BluetoothStateBroadcastReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        intentFilter.addAction("android.bluetooth.BluetoothAdapter.STATE_OFF");
+        intentFilter.addAction("android.bluetooth.BluetoothAdapter.STATE_ON");
+        intentFilter.addAction("SUCCESS");
+        intentFilter.addAction("FAILURE");
+        registerReceiver(mReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //销毁在onResume()方法中的广播
+        unregisterReceiver(mReceiver);
     }
 }
