@@ -150,6 +150,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                             iv_switch.setImageResource(R.drawable.switch_open);
                             isOpen = true;
                             sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_OPEN);
+                            shanxing.updateUI(6);
                         }
                     } else {
                         switch (pressType) {

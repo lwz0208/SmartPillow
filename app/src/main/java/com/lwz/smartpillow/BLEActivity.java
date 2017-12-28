@@ -62,19 +62,19 @@ public class BLEActivity extends AppCompatActivity {
     };
 
     //startScan()回调函数,4.3-5.0间使用
-    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
-        @Override
-        public void onLeScan(final BluetoothDevice bluetoothDevice, int i,byte[] bytes) {
-
-            if (bluetoothDevice != null){
-                //过滤掉其他设备
-                if (!devices.contains(bluetoothDevice) && bluetoothDevice.getName()!= null){
-                    devices.add(bluetoothDevice);
-                    adapter.notifyDataSetChanged();
-                }
-            }
-        }
-    };
+//    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+//        @Override
+//        public void onLeScan(final BluetoothDevice bluetoothDevice, int i,byte[] bytes) {
+//
+//            if (bluetoothDevice != null){
+//                //过滤掉其他设备
+//                if (!devices.contains(bluetoothDevice) && bluetoothDevice.getName()!= null){
+//                    devices.add(bluetoothDevice);
+//                    adapter.notifyDataSetChanged();
+//                }
+//            }
+//        }
+//    };
 
     private Handler handler = new Handler(){
         @Override
@@ -90,12 +90,6 @@ public class BLEActivity extends AppCompatActivity {
                     break;
                 case 2:
                     disConnectLink();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            stopScan();
-                        }
-                    });
                     break;
                 default:
                     break;
@@ -249,6 +243,9 @@ public class BLEActivity extends AppCompatActivity {
                         case BluetoothAdapter.STATE_OFF:
                             Toast.makeText(context , "蓝牙已被关闭", Toast.LENGTH_SHORT).show();
                             BlueDeviceUtils.bluetoothGatt = null;
+                            isScanning = false;
+                            progressBar.setVisibility(View.INVISIBLE);
+                            tv_searching.setVisibility(View.GONE);
                             handler.sendEmptyMessage(2);
                             break;
                         case BluetoothAdapter.STATE_ON:
