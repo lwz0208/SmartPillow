@@ -109,6 +109,10 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         myRecognizer.cancel();
     }
 
+    private void release() {
+        myRecognizer.release();
+    }
+
     public ControlFragment() {
 
     }
@@ -603,5 +607,11 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        release();
     }
 }

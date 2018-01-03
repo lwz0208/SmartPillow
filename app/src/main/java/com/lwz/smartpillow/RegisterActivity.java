@@ -133,7 +133,7 @@ public class RegisterActivity extends AppCompatActivity {
                                     public void run() {
                                         finish();
                                     }
-                                }, 2000);
+                                }, 1800);
 
                             } else {
                                 ToastUtils.showToast(getApplicationContext(), message);

@@ -21,9 +21,9 @@ import java.util.UUID;
 public class BlueDeviceUtils {
     public static boolean isLink = false;
     public static boolean isConnecting = false;
-    public static BluetoothDevice bluetoothDevice;
     public static BluetoothManager mBluetoothManager;
     public static BluetoothAdapter mBluetoothAdapter;
+    public static BluetoothDevice bluetoothDevice;
     public static BluetoothGatt bluetoothGatt;
     public static BluetoothGattService bluetoothGattService;
     public static BluetoothGattCharacteristic bluetoothGattCharacteristic;
@@ -38,6 +38,7 @@ public class BlueDeviceUtils {
                     gatt.discoverServices();//连接成功，开始搜索服务，一定要调用此方法，否则获取不到服务
                 } else if (newState == BluetoothGatt.STATE_DISCONNECTED) { //状态变为 未连接
                     BlueDeviceUtils.isLink = false;
+                    BlueDeviceUtils.isConnecting = false;
                     BlueDeviceUtils.bluetoothGatt.close();
                     BlueDeviceUtils.bluetoothGatt = null;
                     BlueDeviceUtils.bluetoothGattService = null;

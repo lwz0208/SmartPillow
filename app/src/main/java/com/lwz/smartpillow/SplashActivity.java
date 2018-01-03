@@ -12,6 +12,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import utils.SharedPrefsUtil;
+import utils.URL_UNIVERSAL;
 
 public class SplashActivity extends AppCompatActivity {
     private Handler handler = new Handler();
@@ -31,10 +32,13 @@ public class SplashActivity extends AppCompatActivity {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if(TextUtils.isEmpty(SharedPrefsUtil.getValue(SplashActivity.this, "username", "")))
+                if(SharedPrefsUtil.getValue(SplashActivity.this, "loginStatus", 0) == 0) {
                     startActivity(new Intent(SplashActivity.this, LoginActivity.class));
-                else
+                    finish();
+                } else {
                     startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                    finish();
+                }
             }
         }, 2500);
     }

@@ -97,7 +97,13 @@ public class BLEActivity extends AppCompatActivity {
         }
     };
 
-    @Override
+    private Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            stopScan();
+        }
+    };
+        @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ble);
@@ -172,6 +178,7 @@ public class BLEActivity extends AppCompatActivity {
                 devices.add(BlueDeviceUtils.bluetoothDevice);
                 tv_disconnect.setVisibility(View.VISIBLE);
             } else {
+
                 scanBleDevice();
             }
         }
@@ -188,12 +195,7 @@ public class BLEActivity extends AppCompatActivity {
             tv_searching.setVisibility(View.VISIBLE);
             bluetoothLeScanner = BlueDeviceUtils.mBluetoothAdapter.getBluetoothLeScanner();
             bluetoothLeScanner.startScan(mScanCallback);
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    stopScan();
-                }
-            }, SCAN_SECOND);
+            handler.postDelayed(runnable, SCAN_SECOND);
         }
 //        } else {
 //            //android 5.0以下
@@ -214,15 +216,17 @@ public class BLEActivity extends AppCompatActivity {
     }
 
     private void stopScan() {
-        if(isScanning) {
+        if(isScanning && BlueDeviceUtils.mBluetoothAdapter != null && BlueDeviceUtils.mBluetoothAdapter.isEnabled()) {
             bluetoothLeScanner.stopScan(mScanCallback);
             isScanning = false;
             progressBar.setVisibility(View.INVISIBLE);
             tv_searching.setVisibility(View.GONE);
+            handler.removeCallbacks(runnable);
         }
     }
 
     private void disConnectLink() {
+        BlueDeviceUtils.isConnecting = false;
         BlueDeviceUtils.isLink = false;
         BlueDeviceUtils.bluetoothDevice = null;
         if(BlueDeviceUtils.bluetoothGatt != null)
@@ -242,6 +246,11 @@ public class BLEActivity extends AppCompatActivity {
                     switch (blueState){
                         case BluetoothAdapter.STATE_OFF:
                             Toast.makeText(context , "蓝牙已被关闭", Toast.LENGTH_SHORT).show();
+                            if(isScanning) {
+                                handler.removeCallbacks(runnable);
+                            }
+                            BlueDeviceUtils.isLink = false;
+                            BlueDeviceUtils.isConnecting = false;
                             BlueDeviceUtils.bluetoothGatt = null;
                             isScanning = false;
                             progressBar.setVisibility(View.INVISIBLE);
@@ -276,6 +285,19 @@ public class BLEActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        if(BlueDeviceUtils.mBluetoothAdapter == null || !BlueDeviceUtils.mBluetoothAdapter.isEnabled()) {
+            Toast.makeText(this , "蓝牙已被关闭", Toast.LENGTH_SHORT).show();
+            BlueDeviceUtils.bluetoothGatt = null;
+            isScanning = false;
+            progressBar.setVisibility(View.INVISIBLE);
+            tv_searching.setVisibility(View.GONE);
+            disConnectLink();
+        }
+    }
+
+    @Override
     protected void onResume(){
         super.onResume();
         mReceiver = new BluetoothStateBroadcastReceiver();
@@ -294,4 +316,5 @@ public class BLEActivity extends AppCompatActivity {
         //销毁在onResume()方法中的广播
         unregisterReceiver(mReceiver);
     }
+
 }

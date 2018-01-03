@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -61,7 +62,11 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         progressDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         TextView msg = (TextView) progressDialog.findViewById(R.id.id_tv_loadingmsg);
         msg.setText("正在登录");
-        //login("15671618162", "654321");
+
+        if(!TextUtils.isEmpty(SharedPrefsUtil.getValue(this, "username", ""))) {
+            et_account.setText(SharedPrefsUtil.getValue(this, "username", ""));
+            et_password.setText(SharedPrefsUtil.getValue(this, "password", ""));
+        }
     }
 
     @Override
@@ -117,7 +122,11 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                             String message = jsonObject.getString("message");
                             if(code.equals("200") && status.equals("ok")) {
                                 SharedPrefsUtil.putValue(LoginActivity.this, "username", et_account.getText().toString());
-                                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                SharedPrefsUtil.putValue(LoginActivity.this, "password", et_password.getText().toString());
+                                SharedPrefsUtil.putValue(LoginActivity.this, "loginStatus", 1);
+                                startActivity(new Intent(LoginActivity.this, MainActivity.class)
+                                );
+                                finish();
                             } else {
                                 ToastUtils.showToast(getApplicationContext(), message);
                             }
@@ -151,7 +160,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                         login(et_account.getText().toString(), et_password.getText().toString());
                     }
                 }, 1500);
-
                 break;
             default:
                 break;
@@ -168,4 +176,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         }
         return super.onKeyDown(keyCode, event);
     }
+
+
 }
