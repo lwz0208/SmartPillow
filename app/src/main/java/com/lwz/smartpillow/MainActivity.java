@@ -207,25 +207,6 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void getUserInfo() {
-        OkHttpUtils.get().url(URL_UNIVERSAL.GET_USER_INFO)
-                .addParams("telephone", "15671618162")
-                .build()
-                .execute(new StringCallback() {
-
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("getUserInfo", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("getUserInfo", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-    }
-
     private void setOperateInfo() {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("Operator", "Liwenzhao");
@@ -319,5 +300,19 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        if(BlueDeviceUtils.mBluetoothAdapter == null || !BlueDeviceUtils.mBluetoothAdapter.isEnabled()) {
+            Toast.makeText(this , "蓝牙已被关闭", Toast.LENGTH_SHORT).show();
+            BlueDeviceUtils.bluetoothGatt = null;
+            BlueDeviceUtils.isConnecting = false;
+            BlueDeviceUtils.isLink = false;
+            BlueDeviceUtils.bluetoothDevice = null;
+            if(BlueDeviceUtils.bluetoothGatt != null)
+                BlueDeviceUtils.bluetoothGatt.disconnect();
+        }
     }
 }

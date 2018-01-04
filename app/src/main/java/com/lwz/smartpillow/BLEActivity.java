@@ -178,7 +178,6 @@ public class BLEActivity extends AppCompatActivity {
                 devices.add(BlueDeviceUtils.bluetoothDevice);
                 tv_disconnect.setVisibility(View.VISIBLE);
             } else {
-
                 scanBleDevice();
             }
         }

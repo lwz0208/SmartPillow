@@ -6,17 +6,25 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.lwz.smartpillow.BLEActivity;
 import com.lwz.smartpillow.LoginActivity;
+import com.lwz.smartpillow.MainActivity;
 import com.lwz.smartpillow.R;
+import com.zhy.http.okhttp.OkHttpUtils;
+import com.zhy.http.okhttp.callback.StringCallback;
 
+import okhttp3.Call;
 import utils.SharedPrefsUtil;
+import utils.ToastUtils;
 import utils.URL_UNIVERSAL;
 
 /**
@@ -40,6 +48,7 @@ public class MineFragment extends Fragment implements View.OnClickListener{
         tv_mailbox = (TextView) view.findViewById(R.id.tv_mailbox);
         tv_account.setText(SharedPrefsUtil.getValue(getContext(), "username", ""));
         tv_exit.setOnClickListener(this);
+        getUserInfo();
         return view;
 
     }
@@ -63,5 +72,38 @@ public class MineFragment extends Fragment implements View.OnClickListener{
             default:
                 break;
         }
+    }
+
+    private void getUserInfo() {
+        OkHttpUtils.get().url(URL_UNIVERSAL.GET_USER_INFO)
+                .addParams("telephone", SharedPrefsUtil.getValue(getContext(), "username", ""))
+                .build()
+                .execute(new StringCallback() {
+
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("getUserInfo", "接口访问失败：" + call + "---" + e);
+                        ToastUtils.showToast(getContext(), "获取信息失败");
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("getUserInfo", "接口访问成功：" + response);
+                        try {
+                            JSONObject jsonObject = JSON.parseObject(response);
+                            String code = jsonObject.getString("code");
+                            String status = jsonObject.getString("status");
+                            String message = jsonObject.getString("message");
+                            if(code.equals("200") && status.equals("ok")) {
+                                JSONObject object = jsonObject.getJSONObject("data");
+                                tv_mailbox.setText(object.getString("UEmail"));
+                            } else {
+                                ToastUtils.showToast(getContext(), message);
+                            }
+                        } catch (Exception e) {
+                            ToastUtils.showToast(getContext(), "获取信息失败");
+                        }
+                    }
+                });
     }
 }

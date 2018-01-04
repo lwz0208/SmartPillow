@@ -47,7 +47,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
     private ArrayList<ViewData> viewDatas = new ArrayList<>();
     private int currentVoice;
     private FloatingActionButton faBtn;
-    private TextView tv_test;
+    private TextView tv_test, tv_deviceStatus;
     private TextView tv_status1, tv_status2, tv_status3, tv_status4, tv_direction, tv_direction_anti, tv_musicVoice;
     private ImageView iv_play, iv_left, iv_right, iv_switch, iv_link, iv_voice, iv_light, iv_voicd_add, iv_voicd_less;
     private boolean isOpen, isPlaying, isLightOpen;
@@ -191,6 +191,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         tv_direction_anti = (TextView) view.findViewById(R.id.tv_direction_anti);
         tv_musicVoice = (TextView) view.findViewById(R.id.tv_musicVoice);
         tv_test = (TextView) view.findViewById(R.id.tv_test);
+        tv_deviceStatus = (TextView) view.findViewById(R.id.tv_deviceStatus);
 
         iv_play = (ImageView) view.findViewById(R.id.iv_play);
         iv_left = (ImageView) view.findViewById(R.id.iv_left);
@@ -610,8 +611,23 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        if(BlueDeviceUtils.isLink) {
+            tv_deviceStatus.setText("设备已连接");
+            tv_deviceStatus.setTextColor(getContext().getResources().getColor(R.color.Aquamarine3));
+            tv_deviceStatus.setBackgroundColor(getContext().getResources().getColor(R.color.DarkSeaGreen1));
+        } else{
+            tv_deviceStatus.setText("设备没有连接");
+            tv_deviceStatus.setTextColor(getContext().getResources().getColor(R.color.red_bottom_select));
+            tv_deviceStatus.setBackgroundColor(getContext().getResources().getColor(R.color.MistyRose));
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         release();
     }
+
 }
