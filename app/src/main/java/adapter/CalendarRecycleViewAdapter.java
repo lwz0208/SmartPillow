@@ -3,6 +3,7 @@ package adapter;
 import android.content.Context;
 import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,7 +75,6 @@ public class CalendarRecycleViewAdapter extends RecyclerView.Adapter<CalendarRec
         }
         //将position保存在itemView的Tag中，以便点击时进行获取
         holder.itemView.setTag(position);
-
     }
 
     @Override
@@ -107,5 +107,10 @@ public class CalendarRecycleViewAdapter extends RecyclerView.Adapter<CalendarRec
         if(calendar.get(Calendar.YEAR) == year && (calendar.get(Calendar.MONTH) + 1) == month && (calendar.get(Calendar.DAY_OF_MONTH) + "").equals(day))
             return true;
         return false;
+    }
+
+    public void setDisplayDate(int year, int month) {
+        this.year = year;
+        this.month = month;
     }
 }

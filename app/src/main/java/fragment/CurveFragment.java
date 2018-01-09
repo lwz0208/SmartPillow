@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,13 +70,23 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         currentYear = calendar.get(Calendar.YEAR);
         currentMonth = calendar.get(Calendar.MONTH) + 1;
         currentDay = calendar.get(Calendar.DAY_OF_MONTH);
-        tv_date.setText(currentYear + "年" + currentMonth + "月");
         displayYear = currentYear;
         displayMonth = currentMonth;
 
-        adapter = new CalendarRecycleViewAdapter(getContext(), datas, currentYear, currentMonth);
+        adapter = new CalendarRecycleViewAdapter(getContext(), datas, displayYear, displayMonth);
+        adapter.setOnItemClickListener(new CalendarRecycleViewAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, int position) {
+                Log.i("onItemClick", datas.get(position).getDay());
+            }
+
+            @Override
+            public void onItemLongClick(View view, int position) {
+
+            }
+        });
         recyclerView.setAdapter(adapter);
-        initCalendarData(currentYear, currentMonth);
+        initCalendarData(displayYear, displayMonth);
 
         chartActive = (LineChartView) view.findViewById(R.id.chartActive);
         tv_wholeActive = (TextView) view.findViewById(R.id.tv_wholeActive);
@@ -103,13 +114,13 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         else if((Month == 2) && !(isLeapYear(Year)))
             daysInMonth = 28;
 
-        //设置calendar的当前day是本月第一天
-        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        //设置calendar指定的Year-Month-1位本月第一天
+        calendar.set(Year, Month - 1, 1);
         //获取当月第一天是周几
-        int weekDay = calendar.get(Calendar.DAY_OF_WEEK);
+        int weekDay = calendar.get(Calendar.DAY_OF_WEEK) - 1;
 
         //填充第一天之前的空白部分
-        for(int i = 0; i < weekDay - 1; i++) {
+        for(int i = 0; i < weekDay; i++) {
             calendarData calendarData = new calendarData("", "");
             datas.add(calendarData);
         }
@@ -118,7 +129,10 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
             calendarData calendarData = new calendarData(i + "", "20min");
             datas.add(calendarData);
         }
+
+        adapter.setDisplayDate(displayYear, displayMonth);
         adapter.notifyDataSetChanged();
+        tv_date.setText(displayYear + "年" + displayMonth + "月");
     }
 
     private boolean isLeapYear(int currentYear) {
@@ -148,6 +162,9 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                 initCalendarData(displayYear, displayMonth);
                 break;
             case R.id.tv_today:
+                displayYear = currentYear;
+                displayMonth = currentMonth;
+                initCalendarData(displayYear, displayMonth);
                 break;
             default:
                 break;

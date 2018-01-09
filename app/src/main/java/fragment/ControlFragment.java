@@ -612,6 +612,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
 
     @Override
     public void onStart() {
+
         super.onStart();
         if(BlueDeviceUtils.isLink) {
             tv_deviceStatus.setText("设备已连接");
