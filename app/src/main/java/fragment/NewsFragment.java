@@ -30,6 +30,7 @@ import adapter.NewsListAdapter;
 import entity.NewsData;
 import okhttp3.Call;
 import utils.CalculateSignature;
+import utils.SharedPrefsUtil;
 import utils.URL_UNIVERSAL;
 
 /**
@@ -75,7 +76,7 @@ public class NewsFragment extends Fragment {
 
     private void getNews() {
         OkHttpUtils.get().url(URL_UNIVERSAL.NEWS_URL)
-                .addParams("userid", "15671618162")
+                .addParams("userid", SharedPrefsUtil.getValue(getContext(), "username", ""))
                 .addParams("newsType", "health_product")
                 .build()
                 .execute(new StringCallback() {

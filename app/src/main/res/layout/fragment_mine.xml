@@ -47,14 +47,14 @@
           <RelativeLayout
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
-              android:padding="15dp"
-              android:background="@color/white">
+              android:background="@color/white"
+              android:padding="15dp">
 
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:layout_centerVertical="true"
                   android:layout_alignParentLeft="true"
+                  android:layout_centerVertical="true"
                   android:text="账号"
                   android:textSize="14sp" />
 
@@ -63,8 +63,8 @@
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
                   android:layout_alignParentRight="true"
-                  android:layout_marginRight="15dp"
                   android:layout_centerVertical="true"
+                  android:layout_marginRight="15dp"
                   android:textSize="14sp" />
 
           </RelativeLayout>
@@ -77,14 +77,14 @@
           <RelativeLayout
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
-              android:padding="15dp"
-              android:background="@color/white">
+              android:background="@color/white"
+              android:padding="15dp">
 
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:layout_centerVertical="true"
                   android:layout_alignParentLeft="true"
+                  android:layout_centerVertical="true"
                   android:text="邮箱"
                   android:textSize="14sp" />
 
@@ -93,9 +93,134 @@
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
                   android:layout_alignParentRight="true"
+                  android:layout_centerVertical="true"
+                  android:layout_marginRight="15dp"
+                  android:text="——"
+                  android:textSize="14sp" />
+
+          </RelativeLayout>
+
+          <View
+              android:layout_width="match_parent"
+              android:layout_height="0.5dp"
+              android:background="@color/gray_bg3"/>
+
+          <RelativeLayout
+              android:id="@+id/rl_birthday"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:visibility="gone"
+              android:padding="15dp"
+              android:background="@color/white">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_centerVertical="true"
+                  android:layout_alignParentLeft="true"
+                  android:text="生日"
+                  android:textSize="14sp" />
+
+              <TextView
+                  android:id="@+id/tv_birthday"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_alignParentRight="true"
                   android:layout_marginRight="15dp"
                   android:layout_centerVertical="true"
+                  android:text="未填写"
                   android:textSize="14sp" />
+
+          </RelativeLayout>
+
+          <View
+              android:layout_width="match_parent"
+              android:layout_height="0.5dp"
+              android:visibility="gone"
+              android:background="@color/gray_bg3"/>
+
+          <RelativeLayout
+              android:id="@+id/rl_sex"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:padding="15dp"
+              android:background="@color/white">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_centerVertical="true"
+                  android:layout_alignParentLeft="true"
+                  android:text="性别"
+                  android:textSize="14sp" />
+
+              <TextView
+                  android:id="@+id/tv_sex"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_alignParentRight="true"
+                  android:layout_marginRight="15dp"
+                  android:layout_centerVertical="true"
+                  android:text="——"
+                  android:textSize="14sp" />
+
+          </RelativeLayout>
+
+          <View
+              android:layout_width="match_parent"
+              android:layout_height="0.5dp"
+              android:background="@color/gray_bg3"/>
+
+          <RelativeLayout
+              android:id="@+id/rl_nickname"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:padding="15dp"
+              android:background="@color/white">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_centerVertical="true"
+                  android:layout_alignParentLeft="true"
+                  android:text="昵称"
+                  android:textSize="14sp" />
+
+              <TextView
+                  android:id="@+id/tv_nickname"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_alignParentRight="true"
+                  android:layout_marginRight="15dp"
+                  android:layout_centerVertical="true"
+                  android:text="——"
+                  android:textSize="14sp" />
+
+          </RelativeLayout>
+
+          <RelativeLayout
+              android:id="@+id/rl_resetPassword"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_marginTop="20dp"
+              android:padding="15dp"
+              android:background="@color/white">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_centerVertical="true"
+                  android:layout_alignParentLeft="true"
+                  android:text="修改密码"
+                  android:textSize="14sp" />
+
+              <ImageView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_alignParentRight="true"
+                  android:layout_centerVertical="true"
+                  android:layout_marginRight="15dp"
+                  android:src="@drawable/right_arrow"/>
 
           </RelativeLayout>
 

@@ -25,13 +25,14 @@ public class CalendarRecycleViewAdapter extends RecyclerView.Adapter<CalendarRec
     private List<calendarData> calendarDataList;
     private OnItemClickListener mOnItemClickListener = null;
     private Context context;
-    private int year, month;
+    private int year, month, selectDay;
 
     public CalendarRecycleViewAdapter(Context context, List<calendarData> calendarDataList, int year, int month) {
         this.calendarDataList = calendarDataList;
         this.context = context;
         this.year = year;
         this.month = month;
+        this.selectDay = 0;
     }
 
     @Override
@@ -67,6 +68,12 @@ public class CalendarRecycleViewAdapter extends RecyclerView.Adapter<CalendarRec
         holder.tv_day.setText(calendarDataList.get(position).getDay());
         holder.tv_useTime.setText(calendarDataList.get(position).getUseTime());
         if(!holder.tv_day.equals("")) {
+            if(selectDay != 0 && String.valueOf(selectDay).equals(calendarDataList.get(position).getDay())) {
+                holder.tv_day.setTextColor(context.getResources().getColor(R.color.white));
+                holder.tv_day.setBackgroundResource(R.drawable.select_day_bg);
+                holder.tv_useTime.setTextColor(context.getResources().getColor(R.color.blue_floatBtn));
+            }
+
             if(isToday(holder.tv_day.getText().toString())) {
                 holder.tv_day.setTextColor(context.getResources().getColor(R.color.white));
                 holder.tv_day.setBackgroundResource(R.drawable.current_day_bg);
@@ -109,8 +116,9 @@ public class CalendarRecycleViewAdapter extends RecyclerView.Adapter<CalendarRec
         return false;
     }
 
-    public void setDisplayDate(int year, int month) {
+    public void setDisplayDate(int year, int month, int selectDay) {
         this.year = year;
         this.month = month;
+        this.selectDay = selectDay;
     }
 }

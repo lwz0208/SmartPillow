@@ -8,6 +8,9 @@ public class calendarData {
     public String day;
     public String useTime;
 
+    public calendarData() {
+
+    }
     public calendarData(String day, String useTime) {
         this.day = day;
         this.useTime = useTime;

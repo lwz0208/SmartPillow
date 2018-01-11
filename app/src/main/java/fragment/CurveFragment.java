@@ -1,21 +1,28 @@
 package fragment;
 
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.app.AlertDialog;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.DatePicker;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.lwz.smartpillow.R;
 import com.lwz.smartpillow.WholeDayCurveActivity;
+import com.zhy.http.okhttp.OkHttpUtils;
+import com.zhy.http.okhttp.callback.StringCallback;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -31,6 +38,11 @@ import lecho.lib.hellocharts.model.PointValue;
 import lecho.lib.hellocharts.model.ValueShape;
 import lecho.lib.hellocharts.model.Viewport;
 import lecho.lib.hellocharts.view.LineChartView;
+import okhttp3.Call;
+import okhttp3.MediaType;
+import utils.CalculateSignature;
+import utils.SharedPrefsUtil;
+import utils.URL_UNIVERSAL;
 
 public class CurveFragment extends Fragment implements View.OnClickListener{
     private RelativeLayout rl_lastMonth, rl_nextMonth;
@@ -63,6 +75,7 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         rl_lastMonth.setOnClickListener(this);
         rl_nextMonth.setOnClickListener(this);
         tv_today.setOnClickListener(this);
+        tv_date.setOnClickListener(this);
 
         recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 7));
@@ -77,7 +90,9 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         adapter.setOnItemClickListener(new CalendarRecycleViewAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                Log.i("onItemClick", datas.get(position).getDay());
+                if(!datas.get(position).getDay().equals("")) {
+                    initCalendarData(displayYear, displayMonth, Integer.parseInt(datas.get(position).getDay()));
+                }
             }
 
             @Override
@@ -86,7 +101,7 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
             }
         });
         recyclerView.setAdapter(adapter);
-        initCalendarData(displayYear, displayMonth);
+        initCalendarData(displayYear, displayMonth, 0);
 
         chartActive = (LineChartView) view.findViewById(R.id.chartActive);
         tv_wholeActive = (TextView) view.findViewById(R.id.tv_wholeActive);
@@ -102,7 +117,7 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
     }
 
 
-    private void initCalendarData(int Year, int Month) {
+    private void initCalendarData(int Year, int Month, int selectDay) {
         datas.clear();
         int daysInMonth = 0;
         if(Month == 1 || Month == 3 || Month == 5 || Month == 7 || Month == 8 || Month == 10 || Month == 12)
@@ -126,11 +141,18 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         }
 
         for(int i = 1; i <= daysInMonth;  i++) {
-            calendarData calendarData = new calendarData(i + "", "20min");
+            calendarData calendarData = new calendarData();
+            if(Year < currentYear || (Year == currentYear && Month < currentMonth) || (Year == currentYear && Month == currentMonth && i <= currentDay)){
+                calendarData.setDay(i + "");
+                calendarData.setUseTime("20min");
+            } else {
+                calendarData.setDay(i + "");
+                calendarData.setUseTime("—");
+            }
             datas.add(calendarData);
         }
 
-        adapter.setDisplayDate(displayYear, displayMonth);
+        adapter.setDisplayDate(displayYear, displayMonth, selectDay);
         adapter.notifyDataSetChanged();
         tv_date.setText(displayYear + "年" + displayMonth + "月");
     }
@@ -151,7 +173,7 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                     displayMonth = 12;
                 } else
                     displayMonth--;
-                initCalendarData(displayYear, displayMonth);
+                initCalendarData(displayYear, displayMonth, 0);
                 break;
             case R.id.rl_nextMonth:
                 if(displayMonth == 12) {
@@ -159,12 +181,27 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                     displayMonth = 1;
                 } else
                     displayMonth++;
-                initCalendarData(displayYear, displayMonth);
+                initCalendarData(displayYear, displayMonth, 0);
                 break;
             case R.id.tv_today:
                 displayYear = currentYear;
                 displayMonth = currentMonth;
-                initCalendarData(displayYear, displayMonth);
+                initCalendarData(displayYear, displayMonth, 0);
+                break;
+            case R.id.tv_date:
+                new DatePickerDialog(getContext(),AlertDialog.THEME_DEVICE_DEFAULT_LIGHT,
+                        new DatePickerDialog.OnDateSetListener() {
+                            @Override
+                            public void onDateSet(DatePicker view, int year,
+                                                  int monthOfYear, int dayOfMonth) {
+                                // TODO Auto-generated method stub
+                                displayYear = year;
+                                displayMonth = monthOfYear + 1;
+                                initCalendarData(displayYear, displayMonth, dayOfMonth);
+                            }
+                        }, calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH)).show();
                 break;
             default:
                 break;
@@ -233,6 +270,61 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         v.top = 100;
         chartActive.setMaximumViewport(v);
         chartActive.setCurrentViewport(v);
+    }
+
+    private void getMessage() {
+        String[] data = CalculateSignature.getSignature().split("@");
+        OkHttpUtils.get().url(URL_UNIVERSAL.GET_MESSAGE)
+                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+                .addHeader("random", data[0])
+                .addHeader("timestamp", data[1])
+                .addHeader("signature", data[2])
+                .addParams("telphone", SharedPrefsUtil.getValue(getContext(), "username", ""))
+                .addParams("pushflag", "-1")
+                .build()
+                .execute(new StringCallback() {
+
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("getMessage", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("getMessage", "接口访问成功：" + response);
+                        JSONObject jsonObject = JSON.parseObject(response);
+                    }
+                });
+    }
+
+    private void pushOperateInfo() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("Operator", "Liwenzhao");
+        jsonObject.put("Usex", 1);
+        jsonObject.put("LoginPlace", "wuhan");
+        jsonObject.put("StartAge", 10);
+        jsonObject.put("EndAge", 50);
+        jsonObject.put("StartIncome", 0);
+        jsonObject.put("EndIncome", 0);
+        jsonObject.put("PushContent", "22222222222222");
+        //Log.i("pushOperateInfo", jsonObject.toJSONString());
+        OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_OPERATE_INFO)
+                .content(jsonObject.toJSONString())
+                .mediaType(MediaType.parse("application/json"))
+                .build()
+                .execute(new StringCallback() {
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("pushOperateInfo", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("pushOperateInfo", "接口访问成功：" + response);
+                        JSONObject jsonObject = JSON.parseObject(response);
+                    }
+                });
 
     }
+
 }

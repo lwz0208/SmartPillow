@@ -65,7 +65,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_toLeftOf="@+id/tv_date"
-                    android:layout_marginRight="25dp">
+                    android:layout_marginRight="15dp">
 
                     <ImageView
                         android:layout_width="wrap_content"
@@ -80,15 +80,20 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-                    android:textColor="@color/text_black"
-                    android:textSize="16sp" />
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:background="@drawable/calendar_selector"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
 
                 <RelativeLayout
                     android:id="@+id/rl_nextMonth"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_toRightOf="@+id/tv_date"
-                    android:layout_marginLeft="25dp">
+                    android:layout_marginLeft="15dp">
 
                     <ImageView
                         android:layout_width="wrap_content"

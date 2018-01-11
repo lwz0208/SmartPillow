@@ -48,6 +48,7 @@ import okhttp3.Call;
 import okhttp3.MediaType;
 import utils.BlueDeviceUtils;
 import utils.CalculateSignature;
+import utils.SharedPrefsUtil;
 import utils.URL_UNIVERSAL;
 
 public class MainActivity extends AppCompatActivity {
@@ -120,121 +121,6 @@ public class MainActivity extends AppCompatActivity {
         }
         initPermission();
         setDefaultFragment();
-    }
-
-    private void resetPassword() {
-        String[] data = CalculateSignature.getSignature().split("@");
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("telephone", "15671618162");
-        jsonObject.put("oldpsd", "123456");
-        jsonObject.put("newpsd", "654321");
-        Log.i("resetPassword", jsonObject.toJSONString());
-        OkHttpUtils.postString().url(URL_UNIVERSAL.RESET_PASSWORD)
-                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
-                .addHeader("random", data[0])
-                .addHeader("timestamp", data[1])
-                .addHeader("signature", data[2])
-                .content(jsonObject.toJSONString())
-                .mediaType(MediaType.parse("application/json"))
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("resetPassword", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("resetPassword", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-
-    }
-
-    private void setUserBasicInfo() {
-        String[] data = CalculateSignature.getSignature().split("@");
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("telephone", "15671618162");
-        jsonObject.put("birthday", "1994-02-08");
-        jsonObject.put("sex", 1);
-        jsonObject.put("nickname", "Liwenzhao");
-        Log.i("setUserBasicInfo", jsonObject.toJSONString());
-        OkHttpUtils.postString().url(URL_UNIVERSAL.SET_USER_BASIC_INFO)
-                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
-                .addHeader("random", data[0])
-                .addHeader("timestamp", data[1])
-                .addHeader("signature", data[2])
-                .content(jsonObject.toJSONString())
-                .mediaType(MediaType.parse("application/json"))
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("setUserBasicInfo", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("setUserBasicInfo", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-
-    }
-
-    private void getMessage() {
-        String[] data = CalculateSignature.getSignature().split("@");
-        OkHttpUtils.get().url(URL_UNIVERSAL.GET_MESSAGE)
-                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
-                .addHeader("random", data[0])
-                .addHeader("timestamp", data[1])
-                .addHeader("signature", data[2])
-                .addParams("telphone", "15671618162")
-                .build()
-                .execute(new StringCallback() {
-
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("getMessage", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("getMessage", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-    }
-
-    private void setOperateInfo() {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("Operator", "Liwenzhao");
-        jsonObject.put("Usex", 1);
-        jsonObject.put("LoginPlace", "wuhan");
-        jsonObject.put("StartAge", 10);
-        jsonObject.put("EndAge", 50);
-        jsonObject.put("StartIncome", 0);
-        jsonObject.put("EndIncome", 0);
-        jsonObject.put("PushContent", "测试接口");
-        Log.i("setOperateInfo", jsonObject.toJSONString());
-        OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_OPERATE_INFO)
-                .content(jsonObject.toJSONString())
-                .mediaType(MediaType.parse("application/json"))
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("setOperateInfo", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("setOperateInfo", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-
     }
 
     private void initPermission() {
