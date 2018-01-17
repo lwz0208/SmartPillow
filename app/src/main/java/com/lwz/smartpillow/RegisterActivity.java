@@ -153,5 +153,4 @@ public class RegisterActivity extends AppCompatActivity {
                 progressDialog.dismiss();
         }
     }
-
 }

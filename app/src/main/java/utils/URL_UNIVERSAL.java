@@ -28,6 +28,10 @@ public class URL_UNIVERSAL {
     public static final String PUSH_OPERATE_INFO = BASE_URL + "Push";
     //新闻
     public static final String NEWS_URL = "http://cheerstech.cn:8062/api/app/GetNewsList";
+    //上传活跃度数据
+    public static final String PUSH_ACTIVE_DATA = BASE_URL + "UserActivityDegree";
+    //获取活跃度数据
+    public static final String GET_ACTIVE_DATA = BASE_URL + "GetUserActivityDegree";
 
 
     //**************指令部分**************

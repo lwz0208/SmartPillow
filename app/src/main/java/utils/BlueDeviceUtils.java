@@ -19,6 +19,7 @@ import java.util.UUID;
  */
 
 public class BlueDeviceUtils {
+    public static long startTimeMillis;
     public static boolean isLink = false;
     public static boolean isConnecting = false;
     public static BluetoothManager mBluetoothManager;

@@ -18,15 +18,20 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lwz.smartpillow.R;
 import com.lwz.smartpillow.WholeDayCurveActivity;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.StringCallback;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import adapter.CalendarRecycleViewAdapter;
 import entity.calendarData;
@@ -42,6 +47,7 @@ import okhttp3.Call;
 import okhttp3.MediaType;
 import utils.CalculateSignature;
 import utils.SharedPrefsUtil;
+import utils.ToastUtils;
 import utils.URL_UNIVERSAL;
 
 public class CurveFragment extends Fragment implements View.OnClickListener{
@@ -52,6 +58,7 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
     private Calendar calendar;
     private int currentYear, currentMonth, currentDay, displayYear, displayMonth;
     private TextView tv_today, tv_date, tv_wholeActive;
+    private List<Map<String, Object>> displayMonthData = new ArrayList<>();
 
     private LineChartView chartActive;
     private List<PointValue> mPointValuesActive = new ArrayList<>();
@@ -150,6 +157,19 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                 calendarData.setUseTime("—");
             }
             datas.add(calendarData);
+        }
+
+        if(Year < currentYear || (Year == currentYear && Month < currentMonth)){
+            String startDate = Year + "-" + Month + "-" + 1;
+            String endDate = Year + "-" + Month + "-" + daysInMonth;
+            SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
+            getActiveData(sdf.format(startDate), sdf.format(endDate));
+        }
+        if(Year == currentYear && Month == currentMonth){
+            String startDate = Year + "-" + Month + "-" + 1;
+            String endDate = Year + "-" + Month + "-" + currentDay;
+            SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
+            getActiveData(sdf.format(startDate), sdf.format(endDate));
         }
 
         adapter.setDisplayDate(displayYear, displayMonth, selectDay);
@@ -327,4 +347,56 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
 
     }
 
+    private void getActiveData(String startDate, String endDate) {
+        String[] data = CalculateSignature.getSignature().split("@");
+        OkHttpUtils.get().url(URL_UNIVERSAL.GET_ACTIVE_DATA)
+                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+                .addHeader("random", data[0])
+                .addHeader("timestamp", data[1])
+                .addHeader("signature", data[2])
+                .addParams("telephone", SharedPrefsUtil.getValue(getContext(), "username", ""))
+                .addParams("startDate", startDate)
+                .addParams("endDate", endDate)
+                .build()
+                .execute(new StringCallback() {
+
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("getActiveData", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("getActiveData", "接口访问成功：" + response);
+                        try {
+                            JSONObject jsonObject = JSON.parseObject(response);
+                            String code = jsonObject.getString("code");
+                            String status = jsonObject.getString("status");
+                            String message = jsonObject.getString("message");
+                            if (code.equals("200") && status.equals("ok")) {
+                                displayMonthData.clear();
+                                JSONArray monthArray = jsonObject.getJSONArray("data");
+                                for(int i = 0; i < monthArray.size(); i++) {
+                                    JSONObject dayObject = monthArray.getJSONObject(i);
+                                    JSONArray dayArray = dayObject.getJSONArray("activityDegree");
+                                    float allTime = 0;
+                                    for(int j = 0; j < dayArray.size(); j++){
+                                        JSONObject hourObject = dayArray.getJSONObject(j);
+                                        allTime += hourObject.getFloatValue("value") * 60;
+                                    }
+                                    Map<String, Object> map = new HashMap<>();
+                                    map.put("date", dayObject.getString("date"));
+                                    map.put("useTime", allTime);
+                                    displayMonthData.add(map);
+                                }
+
+                            } else {
+                                ToastUtils.showToast(getContext(), message);
+                            }
+                        } catch (Exception e) {
+                            ToastUtils.showToast(getContext(), "获取数据失败");
+                        }
+                    }
+                });
+    }
 }

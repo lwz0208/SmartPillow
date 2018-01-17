@@ -71,6 +71,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerInParent="true"
+                        android:padding="6dp"
+                        android:background="@drawable/calendar_selector"
                         android:src="@drawable/cal_left" />
 
                 </RelativeLayout>
@@ -99,6 +101,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerInParent="true"
+                        android:padding="6dp"
+                        android:background="@drawable/calendar_selector"
                         android:src="@drawable/cal_right" />
 
                 </RelativeLayout>

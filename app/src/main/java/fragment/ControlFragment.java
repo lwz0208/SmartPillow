@@ -1,9 +1,5 @@
 package fragment;
 
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothProfile;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -20,13 +16,25 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.lwz.smartpillow.BLEActivity;
 import com.lwz.smartpillow.R;
 import com.lwz.smartpillow.Shanxing;
+import com.zhy.http.okhttp.OkHttpUtils;
+import com.zhy.http.okhttp.callback.StringCallback;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 import baiduvoice.BaiduASRDigitalDialog;
 import baiduvoice.ChainRecogListener;
@@ -38,11 +46,17 @@ import baiduvoice.MyRecognizer;
 import baiduvoice.OnlineRecogParams;
 import baiduvoice.SimpleTransApplication;
 import entity.ViewData;
+import okhttp3.Call;
+import okhttp3.MediaType;
 import utils.BlueDeviceUtils;
+import utils.CalculateSignature;
+import utils.SharedPrefsUtil;
+import utils.ToastUtils;
 import utils.URL_UNIVERSAL;
 
 
 public class ControlFragment extends Fragment implements View.OnClickListener, IStatus {
+    private Calendar calendar;
     private Shanxing shanxing;
     private ArrayList<ViewData> viewDatas = new ArrayList<>();
     private int currentVoice;
@@ -93,7 +107,6 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         ((SimpleTransApplication) getActivity().getApplicationContext()).setDigitalDialogInput(input);
         startActivityForResult(intent,2);
     }
-
 
     /**
      * 开始录音后，手动停止录音。SDK会识别在此过程中的录音。点击“停止”按钮后调用。
@@ -150,11 +163,15 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                             iv_switch.setImageResource(R.drawable.switch_close);
                             isOpen = false;
                             sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_CLOSE);
+                            if(BlueDeviceUtils.isLink)
+                                dealTime();
                         } else {
                             iv_switch.setImageResource(R.drawable.switch_open);
                             isOpen = true;
                             sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_OPEN);
                             shanxing.updateUI(6);
+                            //if(BlueDeviceUtils.isLink)
+                                BlueDeviceUtils.startTimeMillis = System.currentTimeMillis();
                         }
                     } else {
                         switch (pressType) {
@@ -219,6 +236,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         iv_voicd_less.setOnClickListener(this);
         iv_voice.setOnClickListener(this);
 
+        calendar = Calendar.getInstance();
         currentVoice = 2;
         tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
 
@@ -527,6 +545,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                 iv_switch.setImageResource(R.drawable.switch_open);
                 isOpen = true;
                 sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_OPEN);
+                shanxing.updateUI(6);
             }
         } else if(msg.contains("关闭电源")) {
             if(isOpen) {
@@ -622,6 +641,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
             tv_deviceStatus.setText("设备没有连接");
             tv_deviceStatus.setTextColor(getContext().getResources().getColor(R.color.red_bottom_select));
             tv_deviceStatus.setBackgroundColor(getContext().getResources().getColor(R.color.MistyRose));
+            dealTime();
         }
     }
 
@@ -631,4 +651,177 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         release();
     }
 
+    private void pushActiveData(List<Map<String, Object>> datas, String date) {
+        String[] data = CalculateSignature.getSignature().split("@");
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("telephone", SharedPrefsUtil.getValue(getContext(), "username", ""));
+        jsonObject.put("date", date);
+        JSONArray array = new JSONArray();
+        for(int i = 0; i < datas.size(); i++){
+            JSONObject object = new JSONObject();
+            object.put("start", datas.get(i).get("start"));
+            object.put("end", datas.get(i).get("end"));
+            object.put("value", datas.get(i).get("value"));
+            array.add(object);
+        }
+        jsonObject.put("activityDegree", array);
+
+        final String thisData = jsonObject.toJSONString();
+        Set<String> set = SharedPrefsUtil.getValue(getContext(), "activeData", new HashSet<String>());
+        set.add(jsonObject.toJSONString());
+        SharedPrefsUtil.putValue(getContext(), "activeData", set);
+
+        OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_ACTIVE_DATA)
+                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+                .addHeader("random", data[0])
+                .addHeader("timestamp", data[1])
+                .addHeader("signature", data[2])
+                .content(jsonObject.toJSONString())
+                .mediaType(MediaType.parse("application/json"))
+                .build()
+                .execute(new StringCallback() {
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("pushActiveData", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("pushActiveData", "接口访问成功：" + response);
+                        try {
+                            JSONObject jsonObject = JSON.parseObject(response);
+                            String code = jsonObject.getString("code");
+                            String status = jsonObject.getString("status");
+                            if(code.equals("200") && status.equals("ok")) {
+                                Set<String> set = SharedPrefsUtil.getValue(getContext(), "activeData", new HashSet<String>());
+                                set.remove(thisData);
+                                SharedPrefsUtil.putValue(getContext(), "activeData", set);
+                                Iterator it = set.iterator();
+                                if(it.hasNext()){
+                                    Object obj = it.next();
+                                    pushActiveData((String)obj);
+                                }
+                            } else {
+
+                            }
+                        } catch (Exception e) {
+                            //ToastUtils.showToast(getContext(), "提交数据失败");
+                        }
+                    }
+                });
+
+    }
+
+    private void pushActiveData(final String cacheDatas) {
+        String[] data = CalculateSignature.getSignature().split("@");
+        OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_ACTIVE_DATA)
+                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+                .addHeader("random", data[0])
+                .addHeader("timestamp", data[1])
+                .addHeader("signature", data[2])
+                .content(cacheDatas)
+                .mediaType(MediaType.parse("application/json"))
+                .build()
+                .execute(new StringCallback() {
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("pushActiveData", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("pushActiveData", "接口访问成功：" + response);
+                        try {
+                            JSONObject jsonObject = JSON.parseObject(response);
+                            String code = jsonObject.getString("code");
+                            String status = jsonObject.getString("status");
+                            if(code.equals("200") && status.equals("ok")) {
+                                Set<String> set = SharedPrefsUtil.getValue(getContext(), "activeData", new HashSet<String>());
+                                set.remove(cacheDatas);
+                                SharedPrefsUtil.putValue(getContext(), "activeData", set);
+                                Iterator it = set.iterator();
+                                if(it.hasNext()){
+                                    Object obj = it.next();
+                                    pushActiveData((String)obj);
+                                }
+                            } else {
+
+                            }
+                        } catch (Exception e) {
+                            //ToastUtils.showToast(getContext(), "提交数据失败");
+                        }
+                    }
+                });
+    }
+
+    private void dealTime() {
+        if(BlueDeviceUtils.startTimeMillis != 0) {
+            int useMinute = (int)(System.currentTimeMillis() - BlueDeviceUtils.startTimeMillis) / (1000 * 60);
+            //使用时间大于一分钟时上传数据
+            if(useMinute > 0) {
+                SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
+                calendar.setTimeInMillis(BlueDeviceUtils.startTimeMillis);
+                List<Map<String, Object>> data = new ArrayList<>();
+                //使用时长没有跨小时
+                if(calendar.get(Calendar.MINUTE) + useMinute <= 60) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("start", calendar.get(Calendar.HOUR_OF_DAY));
+                    map.put("end", calendar.get(Calendar.HOUR_OF_DAY) + 1);
+                    map.put("value", useMinute);
+                    data.add(map);
+                    pushActiveData(data, sdf.format(calendar.getTime()));
+                } else {
+                    //使用时长跨小时
+                    Calendar c = Calendar.getInstance();
+                    //使用时长跨小时但没有跨天
+                    if(c.get(Calendar.HOUR_OF_DAY) > calendar.get(Calendar.HOUR_OF_DAY)) {
+                        for(int i = calendar.get(Calendar.HOUR_OF_DAY); i < c.get(Calendar.HOUR_OF_DAY) + 1; i++) {
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("start", i);
+                            map.put("end", i + 1);
+                            if(i == calendar.get(Calendar.HOUR_OF_DAY))
+                                map.put("value", 60 - calendar.get(Calendar.MINUTE));
+                            else if(i == c.get(Calendar.HOUR_OF_DAY))
+                                map.put("value", c.get(Calendar.MINUTE));
+                            else
+                                map.put("value", 60);
+                            data.add(map);
+                        }
+                        pushActiveData(data, sdf.format(calendar.getTime()));
+                    } else {
+                        //使用时长跨小时也跨天
+
+                        //分段上传当天的数据
+                        for(int i = calendar.get(Calendar.HOUR_OF_DAY); i < 24; i++) {
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("start", i);
+                            map.put("end", i + 1);
+                            if(i == calendar.get(Calendar.HOUR_OF_DAY))
+                                map.put("value", 60 - calendar.get(Calendar.MINUTE));
+                            else
+                                map.put("value", 60);
+                            data.add(map);
+                        }
+                        pushActiveData(data, sdf.format(calendar.getTime()));
+
+                        data.clear();
+                        //分段上传第二天的数据
+                        for(int i = 0; i < c.get(Calendar.HOUR_OF_DAY) + 1; i++) {
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("start", i);
+                            map.put("end", i + 1);
+                            if(i >= c.get(Calendar.HOUR_OF_DAY))
+                                map.put("value", c.get(Calendar.MINUTE));
+                            else
+                                map.put("value", 60);
+                            data.add(map);
+                        }
+                        pushActiveData(data, sdf.format(c.getTime()));
+                    }
+
+                }
+                BlueDeviceUtils.startTimeMillis = 0;
+            }
+        }
+    }
 }

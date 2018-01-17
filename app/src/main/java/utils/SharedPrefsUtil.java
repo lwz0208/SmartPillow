@@ -4,8 +4,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
+import java.util.Set;
+
 public class SharedPrefsUtil {  
-    public final static String SETTING = "Setting";  
+    public final static String SETTING = "Setting";
+
     public static void putValue(Context context,String key, int value) {  
          Editor sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE).edit();  
          sp.putInt(key, value);  
@@ -18,9 +21,14 @@ public class SharedPrefsUtil {
     }  
     public static void putValue(Context context,String key, String value) {  
          Editor sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE).edit();  
-         sp.putString(key, value);  
+         sp.putString(key, value);
          sp.commit();  
-    }  
+    }
+    public static void putValue(Context context,String key, Set<String> value) {
+        Editor sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE).edit();
+        sp.putStringSet(key, value);
+        sp.commit();
+    }
     public static int getValue(Context context,String key, int defValue) {  
         SharedPreferences sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE);  
         int value = sp.getInt(key, defValue);  
@@ -35,7 +43,12 @@ public class SharedPrefsUtil {
         SharedPreferences sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE);  
         String value = sp.getString(key, defValue);  
         return value;  
-    }  
+    }
+    public static Set<String> getValue(Context context,String key, Set<String> defValue) {
+        SharedPreferences sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE);
+        Set<String> value = sp.getStringSet(key, defValue);
+        return value;
+    }
     public static void clear(Context context) {  
     	Editor sp =  context.getSharedPreferences(SETTING, Context.MODE_PRIVATE).edit();  
         sp.clear();
