@@ -666,10 +666,9 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         }
         jsonObject.put("activityDegree", array);
 
-        final String thisData = jsonObject.toJSONString();
-        Set<String> set = SharedPrefsUtil.getValue(getContext(), "activeData", new HashSet<String>());
-        set.add(jsonObject.toJSONString());
-        SharedPrefsUtil.putValue(getContext(), "activeData", set);
+        List<String> list =  SharedPrefsUtil.loadArray(getContext(), "activeData", new ArrayList<String>());
+        list.add(jsonObject.toJSONString());
+        SharedPrefsUtil.saveArray(getContext(), "activeData", list);
 
         OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_ACTIVE_DATA)
                 .addHeader("appkey", URL_UNIVERSAL.APPKEY)
@@ -693,13 +692,11 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                             String code = jsonObject.getString("code");
                             String status = jsonObject.getString("status");
                             if(code.equals("200") && status.equals("ok")) {
-                                Set<String> set = SharedPrefsUtil.getValue(getContext(), "activeData", new HashSet<String>());
-                                set.remove(thisData);
-                                SharedPrefsUtil.putValue(getContext(), "activeData", set);
-                                Iterator it = set.iterator();
-                                if(it.hasNext()){
-                                    Object obj = it.next();
-                                    pushActiveData((String)obj);
+                                List<String> list =  SharedPrefsUtil.loadArray(getContext(), "activeData", new ArrayList<String>());
+                                list.remove(list.size() - 1);
+                                SharedPrefsUtil.saveArray(getContext(), "activeData", list);
+                                if(list.size() != 0){
+                                    pushActiveData(list.get(list.size() - 1));
                                 }
                             } else {
 
@@ -712,7 +709,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
 
     }
 
-    private void pushActiveData(final String cacheDatas) {
+    private void pushActiveData(String cacheDatas) {
         String[] data = CalculateSignature.getSignature().split("@");
         OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_ACTIVE_DATA)
                 .addHeader("appkey", URL_UNIVERSAL.APPKEY)
@@ -736,13 +733,11 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                             String code = jsonObject.getString("code");
                             String status = jsonObject.getString("status");
                             if(code.equals("200") && status.equals("ok")) {
-                                Set<String> set = SharedPrefsUtil.getValue(getContext(), "activeData", new HashSet<String>());
-                                set.remove(cacheDatas);
-                                SharedPrefsUtil.putValue(getContext(), "activeData", set);
-                                Iterator it = set.iterator();
-                                if(it.hasNext()){
-                                    Object obj = it.next();
-                                    pushActiveData((String)obj);
+                                List<String> list =  SharedPrefsUtil.loadArray(getContext(), "activeData", new ArrayList<String>());
+                                list.remove(list.size() - 1);
+                                SharedPrefsUtil.saveArray(getContext(), "activeData", list);
+                                if(list.size() != 0){
+                                    pushActiveData(list.get(list.size() - 1));
                                 }
                             } else {
 
@@ -818,10 +813,9 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                         }
                         pushActiveData(data, sdf.format(c.getTime()));
                     }
-
                 }
-                BlueDeviceUtils.startTimeMillis = 0;
             }
+            BlueDeviceUtils.startTimeMillis = 0;
         }
     }
 }

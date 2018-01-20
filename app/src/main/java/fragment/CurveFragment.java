@@ -25,6 +25,7 @@ import com.lwz.smartpillow.WholeDayCurveActivity;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.StringCallback;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -160,16 +161,24 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         }
 
         if(Year < currentYear || (Year == currentYear && Month < currentMonth)){
-            String startDate = Year + "-" + Month + "-" + 1;
-            String endDate = Year + "-" + Month + "-" + daysInMonth;
-            SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
-            getActiveData(sdf.format(startDate), sdf.format(endDate));
+            try {
+                String startDate = Year + "-" + Month + "-" + 1;
+                String endDate = Year + "-" + Month + "-" + daysInMonth;
+                SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
+                getActiveData(sdf.format(sdf.parse(startDate)), sdf.format(sdf.parse(endDate)));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
         if(Year == currentYear && Month == currentMonth){
-            String startDate = Year + "-" + Month + "-" + 1;
-            String endDate = Year + "-" + Month + "-" + currentDay;
-            SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
-            getActiveData(sdf.format(startDate), sdf.format(endDate));
+            try {
+                String startDate = Year + "-" + Month + "-" + 1;
+                String endDate = Year + "-" + Month + "-" + currentDay;
+                SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
+                getActiveData(sdf.format(sdf.parse(startDate)), sdf.format(sdf.parse(endDate)));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
 
         adapter.setDisplayDate(displayYear, displayMonth, selectDay);
