@@ -68,16 +68,20 @@ public class CalendarRecycleViewAdapter extends RecyclerView.Adapter<CalendarRec
         holder.tv_day.setText(calendarDataList.get(position).getDay());
         holder.tv_useTime.setText(calendarDataList.get(position).getUseTime());
         if(!holder.tv_day.equals("")) {
-            if(selectDay != 0 && String.valueOf(selectDay).equals(calendarDataList.get(position).getDay())) {
-                holder.tv_day.setTextColor(context.getResources().getColor(R.color.white));
-                holder.tv_day.setBackgroundResource(R.drawable.select_day_bg);
-                holder.tv_useTime.setTextColor(context.getResources().getColor(R.color.blue_floatBtn));
-            }
-
             if(isToday(holder.tv_day.getText().toString())) {
                 holder.tv_day.setTextColor(context.getResources().getColor(R.color.white));
                 holder.tv_day.setBackgroundResource(R.drawable.current_day_bg);
                 holder.tv_useTime.setTextColor(context.getResources().getColor(R.color.select_red));
+            } else {
+                if(selectDay != 0 && String.valueOf(selectDay).equals(calendarDataList.get(position).getDay())) {
+                    holder.tv_day.setTextColor(context.getResources().getColor(R.color.white));
+                    holder.tv_day.setBackgroundResource(R.drawable.select_day_bg);
+                    holder.tv_useTime.setTextColor(context.getResources().getColor(R.color.blue_floatBtn));
+                } else {
+                    holder.tv_day.setTextColor(context.getResources().getColor(R.color.bottom_text_color));
+                    holder.tv_day.setBackgroundResource(R.drawable.other_day_bg);
+                    holder.tv_useTime.setTextColor(context.getResources().getColor(R.color.bottom_text_color));
+                }
             }
         }
         //将position保存在itemView的Tag中，以便点击时进行获取

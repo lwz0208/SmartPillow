@@ -4,13 +4,25 @@ import android.graphics.Color;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.zhy.http.okhttp.OkHttpUtils;
+import com.zhy.http.okhttp.callback.StringCallback;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import lecho.lib.hellocharts.model.Axis;
 import lecho.lib.hellocharts.model.AxisValue;
@@ -20,6 +32,11 @@ import lecho.lib.hellocharts.model.PointValue;
 import lecho.lib.hellocharts.model.ValueShape;
 import lecho.lib.hellocharts.model.Viewport;
 import lecho.lib.hellocharts.view.LineChartView;
+import okhttp3.Call;
+import utils.CalculateSignature;
+import utils.SharedPrefsUtil;
+import utils.ToastUtils;
+import utils.URL_UNIVERSAL;
 
 public class WholeDayCurveActivity extends AppCompatActivity {
     private LineChartView chart;
@@ -28,6 +45,8 @@ public class WholeDayCurveActivity extends AppCompatActivity {
     private List<PointValue> mPointValues = new ArrayList<>();
     private Calendar c;
     private int currentHour;
+    private List<Map<String, Object>> displayDayData = new ArrayList<>();
+    private TextView tvTime;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,15 +64,21 @@ public class WholeDayCurveActivity extends AppCompatActivity {
         c = Calendar.getInstance();
         currentHour = c.get(Calendar.HOUR_OF_DAY);
         chart = (LineChartView) findViewById(R.id.chart);
-        initLineChart();
+        getDisplayData(getIntent().getStringExtra("date"));
+        tvTime = (TextView) findViewById(R.id.tvTime);
+        tvTime.setText(getIntent().getStringExtra("date"));
     }
 
     /**
      * 初始化LineChart的一些设置
      */
     private void initLineChart() {
+        mAxisValuesX.clear();
+        mAxisValuesY.clear();
+        mPointValues.clear();
+
         //初始化x轴
-        for (int i = 0; i < currentHour + 1; i++) {
+        for (int i = 0; i < 24; i++) {
             mAxisValuesX.add(new AxisValue(i).setLabel(i + "时  "));
         }
 
@@ -61,10 +86,9 @@ public class WholeDayCurveActivity extends AppCompatActivity {
             mAxisValuesY.add(new AxisValue(i).setLabel(i + ""));
         }
         //描点
-        for (int i = 0; i < currentHour + 1; i++) {
-            mPointValues.add(new PointValue(i, (float) Math.random() * 100f + 0f));
+        for (int i = 0; i < 24; i++) {
+            mPointValues.add(new PointValue(i, getHourOfUseTime(i)));
         }
-
 
         Line line = new Line(mPointValues).setColor(Color.parseColor("#EE6363")).setCubic(false);  //折线的颜色
         List<Line> lines = new ArrayList<>();
@@ -112,13 +136,66 @@ public class WholeDayCurveActivity extends AppCompatActivity {
 
         chart.setMaximumViewport(v);
 
-        if(currentHour > 5) {
-            float dx = v.width() / currentHour * 5;
-            v.right = currentHour;
-            v.left = v.right - dx;
-        } else {
-            chart.setScrollEnabled(false);
-        }
+        float dx = v.width() / 24 * 5;
+        v.right = currentHour - 1 ;
+        v.left = v.right - dx - 1;
+
         chart.setCurrentViewport(v);
+    }
+
+    private void getDisplayData(String date) {
+        String[] data = CalculateSignature.getSignature().split("@");
+        OkHttpUtils.get().url(URL_UNIVERSAL.GET_ACTIVE_DATA)
+                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+                .addHeader("random", data[0])
+                .addHeader("timestamp", data[1])
+                .addHeader("signature", data[2])
+                .addParams("telephone", SharedPrefsUtil.getValue(this, "username", ""))
+                .addParams("startDate", date)
+                .addParams("endDate", date)
+                .build()
+                .execute(new StringCallback() {
+
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("getActiveData", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("getActiveData", "接口访问成功：" + response);
+                        try {
+                            JSONObject jsonObject = JSON.parseObject(response);
+                            String code = jsonObject.getString("code");
+                            String status = jsonObject.getString("status");
+                            String message = jsonObject.getString("message");
+                            if (code.equals("200") && status.equals("ok")) {
+                                displayDayData.clear();
+                                JSONArray dayArray = jsonObject.getJSONArray("data");
+                                if(dayArray.size() != 0){
+                                    for(int i = 0; i < dayArray.size(); i++) {
+                                        Map<String, Object> map = new HashMap<>();
+                                        map.put("startTime", dayArray.getJSONObject(i).getIntValue("StartTime"));
+                                        map.put("activeVal", dayArray.getJSONObject(i).getFloatValue("ActivityDegreeVal") * 100);
+                                        displayDayData.add(map);
+                                    }
+                                }
+                                initLineChart();
+                            } else {
+                                ToastUtils.showToast(getApplicationContext(), message);
+                            }
+                        } catch (Exception e) {
+                            //ToastUtils.showToast(getContext(), "获取数据失败");
+                        }
+                    }
+                });
+    }
+
+    private float getHourOfUseTime(int hour) {
+        for(int i = 0; i < displayDayData.size(); i++)
+            if((int)displayDayData.get(i).get("startTime") == hour) {
+                return (float) displayDayData.get(i).get("activeVal");
+            }
+        return 0;
     }
 }

@@ -57,25 +57,25 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
     private CalendarRecycleViewAdapter adapter;
     private ArrayList<calendarData> datas = new ArrayList<>();
     private Calendar calendar;
-    private int currentYear, currentMonth, currentDay, displayYear, displayMonth;
+    private int currentYear, currentMonth, currentDay, displayYear, displayMonth, displayDay;
     private TextView tv_today, tv_date, tv_wholeActive;
     private List<Map<String, Object>> displayMonthData = new ArrayList<>();
+    private List<Map<String, Object>> displayDayData = new ArrayList<>();
 
     private LineChartView chartActive;
     private List<PointValue> mPointValuesActive = new ArrayList<>();
     private List<AxisValue> mAxisValuesXActive = new ArrayList<>();
     private List<AxisValue> mAxisValuesYActive = new ArrayList<>();
+    private SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
 
     public CurveFragment() {
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_curve, container, false);
-
         tv_today = (TextView) view.findViewById(R.id.tv_today);
         tv_date = (TextView) view.findViewById(R.id.tv_date);
         rl_lastMonth = (RelativeLayout) view.findViewById(R.id.rl_lastMonth);
@@ -93,13 +93,21 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         currentDay = calendar.get(Calendar.DAY_OF_MONTH);
         displayYear = currentYear;
         displayMonth = currentMonth;
+        displayDay = currentDay;
 
         adapter = new CalendarRecycleViewAdapter(getContext(), datas, displayYear, displayMonth);
         adapter.setOnItemClickListener(new CalendarRecycleViewAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
                 if(!datas.get(position).getDay().equals("")) {
-                    initCalendarData(displayYear, displayMonth, Integer.parseInt(datas.get(position).getDay()));
+                    displayDay = Integer.parseInt(datas.get(position).getDay());
+                    adapter.setDisplayDate(displayYear, displayMonth, Integer.parseInt(datas.get(position).getDay()));
+                    adapter.notifyDataSetChanged();
+                    try {
+                        getDisplayData(sdf.format(sdf.parse(displayYear + "-" + displayMonth + "-" + Integer.parseInt(datas.get(position).getDay()))));
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
@@ -116,11 +124,22 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         tv_wholeActive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getActivity(), WholeDayCurveActivity.class);
-                startActivity(intent);
+                try {
+                    Intent intent = new Intent(getActivity(), WholeDayCurveActivity.class);
+                    intent.putExtra("date", sdf.format(sdf.parse(displayYear + "-" + displayMonth + "-" + displayDay)));
+                    startActivity(intent);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
             }
         });
-        initActiveLineChart();
+
+        try {
+            getDisplayData(sdf.format(sdf.parse(currentYear + "-" + currentMonth + "-" + currentDay)));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
         return view;
     }
 
@@ -147,25 +166,22 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
             calendarData calendarData = new calendarData("", "");
             datas.add(calendarData);
         }
-
         for(int i = 1; i <= daysInMonth;  i++) {
             calendarData calendarData = new calendarData();
-            if(Year < currentYear || (Year == currentYear && Month < currentMonth) || (Year == currentYear && Month == currentMonth && i <= currentDay)){
-                calendarData.setDay(i + "");
-                calendarData.setUseTime("20min");
-            } else {
-                calendarData.setDay(i + "");
-                calendarData.setUseTime("—");
-            }
+            calendarData.setDay(i + "");
+            calendarData.setUseTime("");
             datas.add(calendarData);
         }
+        adapter.setDisplayDate(displayYear, displayMonth, selectDay);
+        adapter.notifyDataSetChanged();
+        tv_date.setText(displayYear + "年" + displayMonth + "月");
+
 
         if(Year < currentYear || (Year == currentYear && Month < currentMonth)){
             try {
                 String startDate = Year + "-" + Month + "-" + 1;
                 String endDate = Year + "-" + Month + "-" + daysInMonth;
-                SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
-                getActiveData(sdf.format(sdf.parse(startDate)), sdf.format(sdf.parse(endDate)));
+                getActiveData(sdf.format(sdf.parse(startDate)), sdf.format(sdf.parse(endDate)), Year, Month, daysInMonth, weekDay);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -174,16 +190,11 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
             try {
                 String startDate = Year + "-" + Month + "-" + 1;
                 String endDate = Year + "-" + Month + "-" + currentDay;
-                SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
-                getActiveData(sdf.format(sdf.parse(startDate)), sdf.format(sdf.parse(endDate)));
+                getActiveData(sdf.format(sdf.parse(startDate)), sdf.format(sdf.parse(endDate)), Year, Month, daysInMonth, weekDay);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
         }
-
-        adapter.setDisplayDate(displayYear, displayMonth, selectDay);
-        adapter.notifyDataSetChanged();
-        tv_date.setText(displayYear + "年" + displayMonth + "月");
     }
 
     private boolean isLeapYear(int currentYear) {
@@ -191,6 +202,18 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
             return true;
         else
             return false;
+    }
+
+    private String getDayOfUseTime(String date) {
+        for(int i = 0; i < displayMonthData.size(); i++)
+            if(displayMonthData.get(i).get("date").toString().equals(date)) {
+                float usetime = Float.parseFloat(displayMonthData.get(i).get("useTime").toString()) ;
+                if(usetime < 60)
+                    return displayMonthData.get(i).get("useTime").toString() + "min";
+                else
+                    return ((int)(usetime / 60) < 25 ? (int)(usetime / 60)  : 24) + "h";
+            }
+       return "";
     }
 
     @Override
@@ -202,7 +225,13 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                     displayMonth = 12;
                 } else
                     displayMonth--;
+                displayDay = 1;
                 initCalendarData(displayYear, displayMonth, 0);
+                try {
+                    getDisplayData(sdf.format(sdf.parse(displayYear + "-" + displayMonth + "-" + 1)));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 break;
             case R.id.rl_nextMonth:
                 if(displayMonth == 12) {
@@ -210,12 +239,24 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                     displayMonth = 1;
                 } else
                     displayMonth++;
+                displayDay = 1;
                 initCalendarData(displayYear, displayMonth, 0);
+                try {
+                    getDisplayData(sdf.format(sdf.parse(displayYear + "-" + displayMonth + "-" + 1)));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 break;
             case R.id.tv_today:
                 displayYear = currentYear;
                 displayMonth = currentMonth;
+                displayDay = currentDay;
                 initCalendarData(displayYear, displayMonth, 0);
+                try {
+                    getDisplayData(sdf.format(sdf.parse(currentYear + "-" + currentMonth + "-" + currentDay)));
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 break;
             case R.id.tv_date:
                 new DatePickerDialog(getContext(),AlertDialog.THEME_DEVICE_DEFAULT_LIGHT,
@@ -226,11 +267,18 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                                 // TODO Auto-generated method stub
                                 displayYear = year;
                                 displayMonth = monthOfYear + 1;
+                                displayDay = dayOfMonth;
                                 initCalendarData(displayYear, displayMonth, dayOfMonth);
+                                try {
+                                    getDisplayData(sdf.format(sdf.parse(displayYear + "-" + displayMonth + "-" + dayOfMonth)));
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }, calendar.get(Calendar.YEAR),
                         calendar.get(Calendar.MONTH),
                         calendar.get(Calendar.DAY_OF_MONTH)).show();
+
                 break;
             default:
                 break;
@@ -238,20 +286,24 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
     }
 
     private void initActiveLineChart() {
+        mAxisValuesXActive.clear();
+        mAxisValuesYActive.clear();
+        mPointValuesActive.clear();
+
         Calendar c = Calendar.getInstance();
         int hour = c.get(Calendar.HOUR_OF_DAY);
         int m = hour < 4 ? 0 : hour - 4;
         //X轴标注
-        for (int i = m; i < hour + 1; i++) {
-            mAxisValuesXActive.add(new AxisValue(i - m).setLabel(i + "时  "));
+        for (int i = m - 1; i < hour; i++) {
+            mAxisValuesXActive.add(new AxisValue(i - m + 1).setLabel(i + "时  "));
         }
         //Y轴标注
         for (int i = 0; i < 101; i = i + 20) {
             mAxisValuesYActive.add(new AxisValue(i).setLabel(i + ""));
         }
         //描点
-        for (int i = m; i < hour + 1; i++) {
-            mPointValuesActive.add(new PointValue(i - m, (float) Math.random() * 100f + 0f));
+        for (int i = m - 1; i < hour; i++) {
+            mPointValuesActive.add(new PointValue(i - m + 1, getHourOfUseTime(i)));
         }
 
         Line line = new Line(mPointValuesActive).setColor(Color.parseColor("#ffffff")).setCubic(false);  //折线的颜色
@@ -301,62 +353,62 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
         chartActive.setCurrentViewport(v);
     }
 
-    private void getMessage() {
-        String[] data = CalculateSignature.getSignature().split("@");
-        OkHttpUtils.get().url(URL_UNIVERSAL.GET_MESSAGE)
-                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
-                .addHeader("random", data[0])
-                .addHeader("timestamp", data[1])
-                .addHeader("signature", data[2])
-                .addParams("telphone", SharedPrefsUtil.getValue(getContext(), "username", ""))
-                .addParams("pushflag", "-1")
-                .build()
-                .execute(new StringCallback() {
+//    private void getMessage() {
+//        String[] data = CalculateSignature.getSignature().split("@");
+//        OkHttpUtils.get().url(URL_UNIVERSAL.GET_MESSAGE)
+//                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+//                .addHeader("random", data[0])
+//                .addHeader("timestamp", data[1])
+//                .addHeader("signature", data[2])
+//                .addParams("telphone", SharedPrefsUtil.getValue(getContext(), "username", ""))
+//                .addParams("pushflag", "-1")
+//                .build()
+//                .execute(new StringCallback() {
+//
+//                    @Override
+//                    public void onError(Call call, Exception e) {
+//                        Log.i("getMessage", "接口访问失败：" + call + "---" + e);
+//                    }
+//
+//                    @Override
+//                    public void onResponse(String response) {
+//                        Log.i("getMessage", "接口访问成功：" + response);
+//                        JSONObject jsonObject = JSON.parseObject(response);
+//                    }
+//                });
+//    }
+//
+//    private void pushOperateInfo() {
+//        JSONObject jsonObject = new JSONObject();
+//        jsonObject.put("Operator", "Liwenzhao");
+//        jsonObject.put("Usex", 1);
+//        jsonObject.put("LoginPlace", "wuhan");
+//        jsonObject.put("StartAge", 10);
+//        jsonObject.put("EndAge", 50);
+//        jsonObject.put("StartIncome", 0);
+//        jsonObject.put("EndIncome", 0);
+//        jsonObject.put("PushContent", "22222222222222");
+//        //Log.i("pushOperateInfo", jsonObject.toJSONString());
+//        OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_OPERATE_INFO)
+//                .content(jsonObject.toJSONString())
+//                .mediaType(MediaType.parse("application/json"))
+//                .build()
+//                .execute(new StringCallback() {
+//                    @Override
+//                    public void onError(Call call, Exception e) {
+//                        Log.i("pushOperateInfo", "接口访问失败：" + call + "---" + e);
+//                    }
+//
+//                    @Override
+//                    public void onResponse(String response) {
+//                        Log.i("pushOperateInfo", "接口访问成功：" + response);
+//                        JSONObject jsonObject = JSON.parseObject(response);
+//                    }
+//                });
+//
+//    }
 
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("getMessage", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("getMessage", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-    }
-
-    private void pushOperateInfo() {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("Operator", "Liwenzhao");
-        jsonObject.put("Usex", 1);
-        jsonObject.put("LoginPlace", "wuhan");
-        jsonObject.put("StartAge", 10);
-        jsonObject.put("EndAge", 50);
-        jsonObject.put("StartIncome", 0);
-        jsonObject.put("EndIncome", 0);
-        jsonObject.put("PushContent", "22222222222222");
-        //Log.i("pushOperateInfo", jsonObject.toJSONString());
-        OkHttpUtils.postString().url(URL_UNIVERSAL.PUSH_OPERATE_INFO)
-                .content(jsonObject.toJSONString())
-                .mediaType(MediaType.parse("application/json"))
-                .build()
-                .execute(new StringCallback() {
-                    @Override
-                    public void onError(Call call, Exception e) {
-                        Log.i("pushOperateInfo", "接口访问失败：" + call + "---" + e);
-                    }
-
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("pushOperateInfo", "接口访问成功：" + response);
-                        JSONObject jsonObject = JSON.parseObject(response);
-                    }
-                });
-
-    }
-
-    private void getActiveData(String startDate, String endDate) {
+    private void getActiveData(String startDate, String endDate, final int Year, final int Month, final int daysInMonth, final int weekDay) {
         String[] data = CalculateSignature.getSignature().split("@");
         OkHttpUtils.get().url(URL_UNIVERSAL.GET_ACTIVE_DATA)
                 .addHeader("appkey", URL_UNIVERSAL.APPKEY)
@@ -385,27 +437,142 @@ public class CurveFragment extends Fragment implements View.OnClickListener{
                             if (code.equals("200") && status.equals("ok")) {
                                 displayMonthData.clear();
                                 JSONArray monthArray = jsonObject.getJSONArray("data");
-                                for(int i = 0; i < monthArray.size(); i++) {
-                                    JSONObject dayObject = monthArray.getJSONObject(i);
-                                    JSONArray dayArray = dayObject.getJSONArray("activityDegree");
-                                    float allTime = 0;
-                                    for(int j = 0; j < dayArray.size(); j++){
-                                        JSONObject hourObject = dayArray.getJSONObject(j);
-                                        allTime += hourObject.getFloatValue("value") * 60;
+                                if(monthArray.size() != 0){
+                                    if(monthArray.size() == 1) {
+                                        JSONObject dayObject = monthArray.getJSONObject(0);
+                                        Map<String, Object> map = new HashMap<>();
+                                        map.put("date", dayObject.getString("ADDate").substring(0,10));
+                                        map.put("useTime", (int)(dayObject.getFloatValue("ActivityDegreeVal") * 60 + 0.5));
+                                        displayMonthData.add(map);
+                                    } else {
+                                        float allTime = 0;
+                                        for(int i = 0; i < monthArray.size(); i++) {
+                                            JSONObject dayObject = monthArray.getJSONObject(i);
+                                            if(i > 0) {
+                                                if(i == (monthArray.size() - 1)) {
+                                                    if(!dayObject.getString("ADDate").substring(0,10).equals(monthArray.getJSONObject(i-1).getString("ADDate").substring(0,10))){
+                                                        Map<String, Object> map = new HashMap<>();
+                                                        map.put("date", monthArray.getJSONObject(i-1).getString("ADDate").substring(0,10));
+                                                        map.put("useTime", (int)(allTime + 0.5));
+                                                        displayMonthData.add(map);
+
+                                                        allTime = dayObject.getFloatValue("ActivityDegreeVal") * 60;
+                                                        Map<String, Object> map2 = new HashMap<>();
+                                                        map2.put("date", monthArray.getJSONObject(i).getString("ADDate").substring(0,10));
+                                                        map2.put("useTime", (int)(allTime + 0.5));
+                                                        displayMonthData.add(map2);
+                                                        break;
+                                                    } else {
+                                                        allTime += dayObject.getFloatValue("ActivityDegreeVal") * 60;
+                                                        Map<String, Object> map = new HashMap<>();
+                                                        map.put("date", monthArray.getJSONObject(i).getString("ADDate").substring(0,10));
+                                                        map.put("useTime", (int)(allTime + 0.5));
+                                                        displayMonthData.add(map);
+                                                        break;
+                                                    }
+
+                                                } else {
+                                                    if(!dayObject.getString("ADDate").substring(0,10).equals(monthArray.getJSONObject(i-1).getString("ADDate").substring(0,10))){
+                                                        Map<String, Object> map = new HashMap<>();
+                                                        map.put("date", monthArray.getJSONObject(i-1).getString("ADDate").substring(0,10));
+                                                        map.put("useTime", (int)(allTime + 0.5));
+                                                        displayMonthData.add(map);
+                                                        allTime = 0;
+                                                    }
+                                                }
+                                            }
+                                            allTime += dayObject.getFloatValue("ActivityDegreeVal") * 60;
+                                        }
                                     }
-                                    Map<String, Object> map = new HashMap<>();
-                                    map.put("date", dayObject.getString("date"));
-                                    map.put("useTime", allTime);
-                                    displayMonthData.add(map);
+
+                                    datas.clear();
+                                    //填充第一天之前的空白部分
+                                    for(int i = 0; i < weekDay; i++) {
+                                        calendarData calendarData = new calendarData("", "");
+                                        datas.add(calendarData);
+                                    }
+                                    SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd");
+                                    for(int i = 1; i <= daysInMonth;  i++) {
+                                        calendarData calendarData = new calendarData();
+                                        if(Year < currentYear || (Year == currentYear && Month < currentMonth) || (Year == currentYear && Month == currentMonth && i <= currentDay)){
+                                            calendarData.setDay(i + "");
+                                            try {
+                                                calendarData.setUseTime(getDayOfUseTime(sdf.format(sdf.parse(Year + "-" + Month + "-" + i))));
+                                            } catch (ParseException e) {
+                                                e.printStackTrace();
+                                            }
+                                        } else {
+                                            calendarData.setDay(i + "");
+                                            calendarData.setUseTime("");
+                                        }
+                                        datas.add(calendarData);
+                                    }
+                                    adapter.notifyDataSetChanged();
                                 }
 
                             } else {
                                 ToastUtils.showToast(getContext(), message);
                             }
                         } catch (Exception e) {
-                            ToastUtils.showToast(getContext(), "获取数据失败");
+                            //ToastUtils.showToast(getContext(), "获取数据失败");
                         }
                     }
                 });
+    }
+
+    private void getDisplayData(String date) {
+        String[] data = CalculateSignature.getSignature().split("@");
+        OkHttpUtils.get().url(URL_UNIVERSAL.GET_ACTIVE_DATA)
+                .addHeader("appkey", URL_UNIVERSAL.APPKEY)
+                .addHeader("random", data[0])
+                .addHeader("timestamp", data[1])
+                .addHeader("signature", data[2])
+                .addParams("telephone", SharedPrefsUtil.getValue(getContext(), "username", ""))
+                .addParams("startDate", date)
+                .addParams("endDate", date)
+                .build()
+                .execute(new StringCallback() {
+
+                    @Override
+                    public void onError(Call call, Exception e) {
+                        Log.i("getActiveData", "接口访问失败：" + call + "---" + e);
+                    }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("getActiveData", "接口访问成功：" + response);
+                        try {
+                            JSONObject jsonObject = JSON.parseObject(response);
+                            String code = jsonObject.getString("code");
+                            String status = jsonObject.getString("status");
+                            String message = jsonObject.getString("message");
+                            if (code.equals("200") && status.equals("ok")) {
+                                displayDayData.clear();
+                                JSONArray dayArray = jsonObject.getJSONArray("data");
+                                if(dayArray.size() != 0){
+                                    for(int i = 0; i < dayArray.size(); i++) {
+                                        Map<String, Object> map = new HashMap<>();
+                                        map.put("startTime", dayArray.getJSONObject(i).getIntValue("StartTime"));
+                                        map.put("activeVal", dayArray.getJSONObject(i).getFloatValue("ActivityDegreeVal") * 100);
+                                        displayDayData.add(map);
+                                    }
+                                }
+                                initActiveLineChart();
+                            } else {
+                                ToastUtils.showToast(getContext(), message);
+                            }
+                        } catch (Exception e) {
+                            //ToastUtils.showToast(getContext(), "获取数据失败");
+                        }
+                    }
+                });
+    }
+
+    private float getHourOfUseTime(int hour) {
+        for(int i = 0; i < displayDayData.size(); i++)
+            if((int)displayDayData.get(i).get("startTime") == hour) {
+                return (float) displayDayData.get(i).get("activeVal");
+            }
+        return 0;
     }
 }

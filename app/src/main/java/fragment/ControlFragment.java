@@ -170,7 +170,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
                             isOpen = true;
                             sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_OPEN);
                             shanxing.updateUI(6);
-                            //if(BlueDeviceUtils.isLink)
+                            if(BlueDeviceUtils.isLink)
                                 BlueDeviceUtils.startTimeMillis = System.currentTimeMillis();
                         }
                     } else {
@@ -631,7 +631,6 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
 
     @Override
     public void onStart() {
-
         super.onStart();
         if(BlueDeviceUtils.isLink) {
             tv_deviceStatus.setText("设备已连接");
