@@ -1,11 +1,13 @@
 package fragment;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -56,6 +58,7 @@ import utils.URL_UNIVERSAL;
 
 
 public class ControlFragment extends Fragment implements View.OnClickListener, IStatus {
+    private static final String TAG = "ControlFragment";
     private Calendar calendar;
     private Shanxing shanxing;
     private ArrayList<ViewData> viewDatas = new ArrayList<>();
@@ -131,13 +134,33 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
     }
 
     @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        Log.i(TAG, "onHiddenChanged--" + hidden);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        Log.i(TAG, "onAttach");
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate");
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        Log.i(TAG, "onActivityCreated");
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateView");
         // 初始化百度语音sdk
         listener = new ChainRecogListener();
         listener.addListener(new MessageStatusRecogListener(handler));
@@ -307,7 +330,7 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
         } else {
             if (BlueDeviceUtils.isLink) {
                 if (isOpen || type.equals("90")) {
-                    BlueDeviceUtils.bluetoothGattCharacteristic.setValue(type + type);
+                    BlueDeviceUtils.bluetoothGattCharacteristic.setValue(type);
                     BlueDeviceUtils.bluetoothGatt.writeCharacteristic(BlueDeviceUtils.bluetoothGattCharacteristic);
                 } else {
                     Toast.makeText(getActivity().getApplicationContext(), "请打开开关", Toast.LENGTH_SHORT).show();
@@ -498,103 +521,107 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
     }
 
     private void dealWithVoiceMessage(String msg) {
-        if(msg.contains("正转") || msg.contains("正传")  || msg.contains("症状")) {
-            tv_direction.setTextColor(getResources().getColor(R.color.white));
-            tv_direction.setBackgroundResource(R.drawable.directtion_select_bg);
-            tv_direction_anti.setTextColor(getResources().getColor(R.color.select_red));
-            tv_direction_anti.setBackgroundResource(R.drawable.direction_unselect_bg);
-            setModeTextColor(0);
-            sendDataToBlueDevice(URL_UNIVERSAL.DIRECTION_POSITIVE);
-        } else if(msg.contains("反转")) {
-            tv_direction_anti.setTextColor(getResources().getColor(R.color.white));
-            tv_direction_anti.setBackgroundResource(R.drawable.directtion_select_bg);
-            tv_direction.setTextColor(getResources().getColor(R.color.select_red));
-            tv_direction.setBackgroundResource(R.drawable.direction_unselect_bg);
-            setModeTextColor(0);
-            sendDataToBlueDevice(URL_UNIVERSAL.DIRECTION_NEGATIVE);
-        } else if(msg.contains("开灯")) {
-            if(!isLightOpen) {
-                isLightOpen = true;
-                iv_light.setImageResource(R.drawable.light_open);
-                sendDataToBlueDevice(URL_UNIVERSAL.LIGHT_CLOSE);
-            }
-        } else if(msg.contains("关灯")) {
-            if(isLightOpen) {
-                isLightOpen = false;
-                iv_light.setImageResource(R.drawable.light_close);
-                sendDataToBlueDevice(URL_UNIVERSAL.LIGHT_OPEN);
-            }
-        } else if(msg.contains("播放音乐")) {
-            if(!isPlaying) {
-                isPlaying = true;
-                iv_play.setImageResource(R.drawable.musci_stop);
-                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_OPEN);
-            }
-        } else if(msg.contains("停止音乐")) {
-            if(isPlaying) {
-                isPlaying = false;
-                iv_play.setImageResource(R.drawable.musci_play);
-                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_CLOSE);
-            }
-        } else if(msg.contains("上一曲")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_LAST);
-        } else if(msg.contains("下一曲")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_NEXT);
-        } else if(msg.contains("打开电源")) {
-            if(!isOpen) {
-                iv_switch.setImageResource(R.drawable.switch_open);
-                isOpen = true;
-                sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_OPEN);
+
+            if(msg.contains("正转") || msg.contains("正传")  || msg.contains("症状")) {
+                tv_direction.setTextColor(getResources().getColor(R.color.white));
+                tv_direction.setBackgroundResource(R.drawable.directtion_select_bg);
+                tv_direction_anti.setTextColor(getResources().getColor(R.color.select_red));
+                tv_direction_anti.setBackgroundResource(R.drawable.direction_unselect_bg);
+                setModeTextColor(0);
+                sendDataToBlueDevice(URL_UNIVERSAL.DIRECTION_POSITIVE);
+            } else if(msg.contains("反转")) {
+                tv_direction_anti.setTextColor(getResources().getColor(R.color.white));
+                tv_direction_anti.setBackgroundResource(R.drawable.directtion_select_bg);
+                tv_direction.setTextColor(getResources().getColor(R.color.select_red));
+                tv_direction.setBackgroundResource(R.drawable.direction_unselect_bg);
+                setModeTextColor(0);
+                sendDataToBlueDevice(URL_UNIVERSAL.DIRECTION_NEGATIVE);
+            } else if(msg.contains("开灯")) {
+                if(!isLightOpen) {
+                    isLightOpen = true;
+                    iv_light.setImageResource(R.drawable.light_open);
+                    sendDataToBlueDevice(URL_UNIVERSAL.LIGHT_CLOSE);
+                }
+            } else if(msg.contains("关灯")) {
+                if(isLightOpen) {
+                    isLightOpen = false;
+                    iv_light.setImageResource(R.drawable.light_close);
+                    sendDataToBlueDevice(URL_UNIVERSAL.LIGHT_OPEN);
+                }
+            } else if(msg.contains("播放音乐")) {
+                if(!isPlaying) {
+                    isPlaying = true;
+                    iv_play.setImageResource(R.drawable.musci_stop);
+                    sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_OPEN);
+                }
+            } else if(msg.contains("停止音乐")) {
+                if(isPlaying) {
+                    isPlaying = false;
+                    iv_play.setImageResource(R.drawable.musci_play);
+                    sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_CLOSE);
+                }
+            } else if(msg.contains("上一曲")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_LAST);
+            } else if(msg.contains("下一曲")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_NEXT);
+            } else if(msg.contains("打开电源")) {
+                if(!isOpen) {
+                    iv_switch.setImageResource(R.drawable.switch_open);
+                    isOpen = true;
+                    sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_OPEN);
+                    shanxing.updateUI(6);
+                }
+            } else if(msg.contains("关闭电源")) {
+                if(isOpen) {
+                    iv_switch.setImageResource(R.drawable.switch_close);
+                    isOpen = false;
+                    sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_CLOSE);
+                }
+            } else if(msg.contains("一级速度")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.SPEED_ONE);
+                shanxing.updateUI(1);
+            } else if(msg.contains("二级速度")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.SPEED_TWO);
+                shanxing.updateUI(2);
+            } else if(msg.contains("三级速度") || msg.contains("3g速度")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.SPEED_THREE);
+                shanxing.updateUI(3);
+            } else if(msg.contains("四级速度") || msg.contains("4g速度")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.SPEED_FOUR);
+                shanxing.updateUI(4);
+            } else if(msg.contains("五级速度") || msg.contains("无极速度")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.SPEED_FIVE);
+                shanxing.updateUI(5);
+            } else if(msg.contains("六级速度")) {
+                sendDataToBlueDevice(URL_UNIVERSAL.SPEED_SIX);
                 shanxing.updateUI(6);
+            } else if(msg.contains("一级声音")) {
+                currentVoice = 1;
+                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_ONE);
+                voiceUpdateIcon(1);
+                iv_voicd_less.setEnabled(false);
+                iv_voicd_less.setImageResource(R.drawable.voice_less_unuse);
+                tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+            } else if(msg.contains("二级声音")) {
+                currentVoice = 2;
+                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_TWO);
+                voiceUpdateIcon(2);
+                tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+            } else if(msg.contains("三级声音") || msg.contains("3g声音")) {
+                currentVoice = 3;
+                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_THREE);
+                voiceUpdateIcon(3);
+                tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+            } else if(msg.contains("四季声音") || msg.contains("四级声音") || msg.contains("4g声音")) {
+                currentVoice = 4;
+                sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_FOUR);
+                voiceUpdateIcon(4);
+                iv_voicd_add.setEnabled(false);
+                iv_voicd_add.setImageResource(R.drawable.voice_add_unuse);
+                tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
             }
-        } else if(msg.contains("关闭电源")) {
-            if(isOpen) {
-                iv_switch.setImageResource(R.drawable.switch_close);
-                isOpen = false;
-                sendDataToBlueDevice(URL_UNIVERSAL.SWITCH_CLOSE);
-            }
-        } else if(msg.contains("一级速度")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_ONE);
-            shanxing.updateUI(1);
-        } else if(msg.contains("二级速度")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_TWO);
-            shanxing.updateUI(2);
-        } else if(msg.contains("三级速度") || msg.contains("3g速度")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_THREE);
-            shanxing.updateUI(3);
-        } else if(msg.contains("四级速度") || msg.contains("4g速度")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_FOUR);
-            shanxing.updateUI(4);
-        } else if(msg.contains("五级速度") || msg.contains("无极速度")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_FIVE);
-            shanxing.updateUI(5);
-        } else if(msg.contains("六级速度")) {
-            sendDataToBlueDevice(URL_UNIVERSAL.SPEED_SIX);
-            shanxing.updateUI(6);
-        } else if(msg.contains("一级声音")) {
-            currentVoice = 1;
-            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_ONE);
-            voiceUpdateIcon(1);
-            iv_voicd_less.setEnabled(false);
-            iv_voicd_less.setImageResource(R.drawable.voice_less_unuse);
-            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
-        } else if(msg.contains("二级声音")) {
-            currentVoice = 2;
-            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_TWO);
-            voiceUpdateIcon(2);
-            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
-        } else if(msg.contains("三级声音") || msg.contains("3g声音")) {
-            currentVoice = 3;
-            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_THREE);
-            voiceUpdateIcon(3);
-            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
-        } else if(msg.contains("四季声音") || msg.contains("四级声音") || msg.contains("4g声音")) {
-            currentVoice = 4;
-            sendDataToBlueDevice(URL_UNIVERSAL.MUSIC_VOICE_FOUR);
-            voiceUpdateIcon(4);
-            iv_voicd_add.setEnabled(false);
-            iv_voicd_add.setImageResource(R.drawable.voice_add_unuse);
-            tv_musicVoice.setText("音量："+ String.valueOf(currentVoice));
+        else {
+            Toast.makeText(getActivity().getApplicationContext(), "无法识别", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -647,7 +674,20 @@ public class ControlFragment extends Fragment implements View.OnClickListener, I
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        Log.i(TAG, "onDestroyView");
         release();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "onDestroy");
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        Log.i(TAG, "onDetach");
     }
 
     private void pushActiveData(List<Map<String, Object>> datas, String date) {

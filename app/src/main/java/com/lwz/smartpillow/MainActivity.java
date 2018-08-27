@@ -52,6 +52,7 @@ import utils.SharedPrefsUtil;
 import utils.URL_UNIVERSAL;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
     private static final int PERMISSION_REQUEST_CODE = 1;
     private RadioGroup bottomRg = null;
     private ControlFragment controlFragment;
@@ -170,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
         transaction.add(R.id.fl_content, newsFragment);
         transaction.add(R.id.fl_content, mineFragment);
 
+
         transaction.show(controlFragment);
         transaction.hide(curveFragment);
         transaction.hide(newsFragment);
@@ -201,5 +203,23 @@ public class MainActivity extends AppCompatActivity {
             if(BlueDeviceUtils.bluetoothGatt != null)
                 BlueDeviceUtils.bluetoothGatt.disconnect();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, "onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.i(TAG, "onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "onDestroy");
     }
 }

@@ -11,7 +11,11 @@ import android.widget.TextView;
 
 import com.lwz.smartpillow.R;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Scanner;
 
 import utils.BlueDeviceUtils;
 
@@ -82,5 +86,7 @@ public class BLEDeviceAdapter extends BaseAdapter {
         }
 
         return convertView;
+
+
     }
 }

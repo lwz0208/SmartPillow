@@ -28,6 +28,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import adapter.BLEDeviceAdapter;
 import utils.BlueDeviceUtils;
@@ -181,7 +182,6 @@ public class BLEActivity extends AppCompatActivity {
                 scanBleDevice();
             }
         }
-
         adapter = new BLEDeviceAdapter(getApplicationContext(), devices);
         listView.setAdapter(adapter);
     }
@@ -315,5 +315,4 @@ public class BLEActivity extends AppCompatActivity {
         //销毁在onResume()方法中的广播
         unregisterReceiver(mReceiver);
     }
-
 }

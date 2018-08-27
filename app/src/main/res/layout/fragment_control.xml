@@ -31,20 +31,12 @@
                 android:layout_marginLeft="15dp"
                 android:src="@drawable/spech_voice" />
 
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:layout_marginRight="8dp"
-                android:layout_toLeftOf="@+id/tv_title"
-                android:src="@drawable/logo_title" />
-
             <TextView
                 android:id="@+id/tv_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="按摩枕"
+                android:text="孜康"
                 android:textColor="@color/white"
                 android:textSize="16sp" />
 

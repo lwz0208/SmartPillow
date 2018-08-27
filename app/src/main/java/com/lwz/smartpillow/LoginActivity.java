@@ -84,7 +84,8 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 else {
                     if(CheckNetwork.CheckNetState(this)) {
                         progressDialog.show();
-                        login(et_account.getText().toString(), et_password.getText().toString());
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                        //login(et_account.getText().toString(), et_password.getText().toString());
                     } else
                         ToastUtils.showToast(this, "当前网络不可用");
                 }
