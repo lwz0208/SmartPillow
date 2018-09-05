@@ -11,7 +11,7 @@ public class URL_UNIVERSAL {
 
     //**************接口部分**************
     //接口地址前缀
-    public static final String BASE_URL = "http://121.42.172.18:8062/api/App/";
+    public static final String BASE_URL = "http://cheerstech.cn/api/App/";
     //注册
     public static final String REGISTER = BASE_URL + "Register";
     //登录
